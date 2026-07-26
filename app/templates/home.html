@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5 text-center text-white">
+    <div class="row justify-content-center py-5">
+        <div class="col-lg-8">
+            <i class="fa-solid fa-shield-halved text-info mb-4" style="font-size: 80px; filter: drop-shadow(0 0 15px var(--primary-glow));"></i>
+            <h1 class="display-4 fw-extrabold mb-3">AI-Integrated Web-Based NIDS</h1>
+            <p class="lead text-muted mb-5">
+                Simulate, Capture, and Mitigate network anomalies in real-time. Powering next-generation Security Operations Centers (SOC) with heuristic thresholds and Random Forest AI analysis.
+            </p>
+            
+            <div class="d-flex justify-content-center gap-3 mb-5">
+                <a href="{{ url_for('auth.login') }}" class="btn btn-cyber btn-lg px-4"><i class="fa-solid fa-right-to-bracket me-2"></i>Access SOC Portal</a>
+                <a href="#features-section" class="btn btn-cyber-outline btn-lg px-4"><i class="fa-solid fa-list-check me-2"></i>System Architecture</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Info sections -->
+    <div class="row g-4 mt-5 text-start" id="features-section">
+        <div class="col-md-4">
+            <div class="card-cyber h-100 p-4">
+                <div class="icon-wrapper bg-info-subtle text-info p-3 rounded mb-3 d-inline-block">
+                    <i class="fa-solid fa-ethernet fa-2x"></i>
+                </div>
+                <h3>Packet Capturing</h3>
+                <p class="text-muted" style="font-size: 14px;">
+                    Powered by Scapy. Captures ethernet/raw socket layers, extracts IP/TCP frames, and reviews payload signatures. Supports automatic fallback simulation modes.
+                </p>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card-cyber h-100 p-4">
+                <div class="icon-wrapper bg-warning-subtle text-warning p-3 rounded mb-3 d-inline-block">
+                    <i class="fa-solid fa-sliders fa-2x"></i>
+                </div>
+                <h3>Heuristic Rules</h3>
+                <p class="text-muted" style="font-size: 14px;">
+                    Real-time moving-window heuristics to flag Port Scans, ICMP Floods, SYN Floods, Brute-Force connections, and restricted port queries.
+                </p>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card-cyber h-100 p-4">
+                <div class="icon-wrapper bg-success-subtle text-success p-3 rounded mb-3 d-inline-block">
+                    <i class="fa-solid fa-brain fa-2x"></i>
+                </div>
+                <h3>Random Forest Classifier</h3>
+                <p class="text-muted" style="font-size: 14px;">
+                    Integrates a trained Scikit-Learn Random Forest Classifier to evaluate features (packet rates, lengths, durations) and accurately classify DDoS, DoS, Botnets, and SQLi attacks.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

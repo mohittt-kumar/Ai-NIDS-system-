@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block page_title %}Alert Center Threat Ingestion Registry{% endblock %}
+
+{% block content %}
+<div class="container-fluid text-white">
+    <!-- Alert Filters Bar -->
+    <div class="card-cyber p-4 mb-4">
+        <div class="row g-3 align-items-center">
+            <!-- Search bar -->
+            <div class="col-md-4">
+                <label class="form-label text-muted" style="font-size: 11px;">Search Targets</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-dark border-secondary text-info"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" class="form-control form-cyber" id="alert-search-input" placeholder="IP Address, Attack Type...">
+                </div>
+            </div>
+            
+            <!-- Severity Filter -->
+            <div class="col-md-2">
+                <label class="form-label text-muted" style="font-size: 11px;">Severity Priority</label>
+                <select class="form-select form-cyber" id="alert-severity-select">
+                    <option value="All">All Severities</option>
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+                </select>
+            </div>
+            
+            <!-- Status Filter -->
+            <div class="col-md-2">
+                <label class="form-label text-muted" style="font-size: 11px;">Mitigation Status</label>
+                <select class="form-select form-cyber" id="alert-status-select">
+                    <option value="All">Active & Resolved</option>
+                    <option value="Active">Active only</option>
+                    <option value="Resolved">Resolved only</option>
+                </select>
+            </div>
+            
+            <!-- Filter Action Buttons -->
+            <div class="col-md-4 text-md-end d-flex gap-2 align-self-end justify-content-md-end">
+                <button id="filter-reset-btn" class="btn btn-outline-secondary"><i class="fa-solid fa-rotate-left me-1"></i>Reset</button>
+                <button id="alerts-export-csv" class="btn btn-cyber-outline"><i class="fa-solid fa-file-csv me-1"></i>Export CSV</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts Table Grid -->
+    <div class="card-cyber p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0 text-info"><i class="fa-solid fa-list-check me-2"></i>Triggered Security Alerts</h6>
+            <div class="text-muted" id="alert-count-indicator" style="font-size: 13px;">Found: 0 alerts</div>
+        </div>
+        
+        <div class="table-responsive mb-4">
+            <table class="table table-dark table-hover border-secondary mb-0 align-middle">
+                <thead>
+                    <tr class="border-bottom border-secondary text-muted" style="font-size: 12px;">
+                        <th>Alert ID</th>
+                        <th>Timestamp (UTC)</th>
+                        <th>Source IP</th>
+                        <th>Destination IP</th>
+                        <th>Attack Type</th>
+                        <th>Severity</th>
+                        <th>Confidence</th>
+                        <th>Status</th>
+                        <th class="text-end">Mitigate</th>
+                    </tr>
+                </thead>
+                <tbody id="alerts-grid-tbody" style="font-size: 13px;">
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <span class="spinner-border spinner-border-sm me-2 text-info"></span>Querying database...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination controls -->
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="text-muted" style="font-size: 13px;">
+                Page <span id="pag-current">1</span> of <span id="pag-total">1</span>
+            </div>
+            <div class="btn-group gap-1">
+                <button class="btn btn-sm btn-cyber-outline" id="pag-prev-btn" disabled><i class="fa-solid fa-angle-left me-1"></i>Previous</button>
+                <button class="btn btn-sm btn-cyber-outline" id="pag-next-btn" disabled>Next<i class="fa-solid fa-angle-right ms-1"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    let currentPage = 1;
+    const perPage = 15;
+    
+    const tbody = document.getElementById('alerts-grid-tbody');
+    const searchInput = document.getElementById('alert-search-input');
+    const severitySelect = document.getElementById('alert-severity-select');
+    const statusSelect = document.getElementById('alert-status-select');
+    
+    const countIndicator = document.getElementById('alert-count-indicator');
+    const pagCurrent = document.getElementById('pag-current');
+    const pagTotal = document.getElementById('pag-total');
+    
+    const prevBtn = document.getElementById('pag-prev-btn');
+    const nextBtn = document.getElementById('pag-next-btn');
+    
+    const resetBtn = document.getElementById('filter-reset-btn');
+    const exportCsvBtn = document.getElementById('alerts-export-csv');
+
+    function loadAlerts(page = 1) {
+        currentPage = page;
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2 text-info"></span>Refreshing alerts feed...</td></tr>';
+        
+        const params = new URLSearchParams({
+            page: page,
+            per_page: perPage,
+            severity: severitySelect.value,
+            status: statusSelect.value,
+            search: searchInput.value
+        });
+        
+        fetch(`/api/alert/list?${params.toString()}`)
+            .then(res => res.json())
+            .then(data => {
+                tbody.innerHTML = '';
+                
+                countIndicator.textContent = `Found: ${data.total} alerts`;
+                pagCurrent.textContent = data.page;
+                pagTotal.textContent = data.pages || 1;
+                
+                prevBtn.disabled = !data.has_prev;
+                nextBtn.disabled = !data.has_next;
+                
+                if (data.alerts.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No alerts match search parameters.</td></tr>';
+                    return;
+                }
+                
+                data.alerts.forEach(al => {
+                    let badgeClass = 'badge-low';
+                    if (al.severity === 'Medium') badgeClass = 'badge-medium';
+                    else if (al.severity === 'High') badgeClass = 'badge-high';
+                    else if (al.severity === 'Critical') badgeClass = 'badge-critical';
+                    
+                    const isResolved = al.status === 'Resolved';
+                    const statusBadge = isResolved 
+                        ? '<span class="badge bg-success-subtle text-success border border-success px-2 py-1">Resolved</span>'
+                        : '<span class="badge bg-danger-subtle text-danger border border-danger px-2 py-1 animate-pulse">Active</span>';
+                    
+                    const tr = document.createElement('tr');
+                    tr.style.opacity = isResolved ? '0.6' : '1';
+                    tr.innerHTML = `
+                        <td class="text-info font-monospace fw-bold">#${al.id}</td>
+                        <td class="text-muted">${al.timestamp}</td>
+                        <td class="font-monospace">${al.src_ip}</td>
+                        <td class="font-monospace">${al.dst_ip}</td>
+                        <td class="fw-semibold"><i class="fa-solid fa-triangle-exclamation text-warning me-1"></i>${al.attack_type}</td>
+                        <td><span class="badge-sev ${badgeClass}">${al.severity}</span></td>
+                        <td>${(al.confidence * 100).toFixed(0)}%</td>
+                        <td>${statusBadge}</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-success py-0 px-2 me-1 resolve-alert-btn" data-id="${al.id}" ${isResolved ? 'disabled' : ''}>
+                                <i class="fa-solid fa-check me-1"></i>Resolve
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger py-0 px-2 delete-alert-btn" data-id="${al.id}">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                
+                // Wire up actions
+                document.querySelectorAll('.resolve-alert-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.getAttribute('data-id');
+                        resolveAlert(id);
+                    });
+                });
+                document.querySelectorAll('.delete-alert-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.getAttribute('data-id');
+                        deleteAlert(id);
+                    });
+                });
+            })
+            .catch(err => {
+                console.error("Error loading alerts: ", err);
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i>Failed to fetch alerts.</td></tr>';
+            });
+    }
+
+    function resolveAlert(id) {
+        fetch(`/api/alert/${id}/resolve`, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(`Alert ID #${id} marked as resolved.`, 'success');
+                    loadAlerts(currentPage);
+                } else {
+                    showNotification("Action failed: " + data.error, "danger");
+                }
+            });
+    }
+
+    function deleteAlert(id) {
+        if (confirm(`Dismiss alert #${id}? This will remove it from active lists.`)) {
+            fetch(`/api/alert/${id}/delete`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(`Alert ID #${id} deleted from logs.`, 'warning');
+                        loadAlerts(currentPage);
+                    } else {
+                        showNotification("Action failed: " + data.error, "danger");
+                    }
+                });
+        }
+    }
+
+    // Input handlers with debounce
+    let searchTimeout = null;
+    searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => loadAlerts(1), 500);
+    });
+    
+    severitySelect.addEventListener('change', () => loadAlerts(1));
+    statusSelect.addEventListener('change', () => loadAlerts(1));
+    
+    prevBtn.addEventListener('click', () => {
+        if (currentPage > 1) loadAlerts(currentPage - 1);
+    });
+    nextBtn.addEventListener('click', () => {
+        loadAlerts(currentPage + 1);
+    });
+    
+    resetBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        severitySelect.value = 'All';
+        statusSelect.value = 'All';
+        loadAlerts(1);
+    });
+
+    // Export CSV trigger
+    exportCsvBtn.addEventListener('click', () => {
+        const btnText = exportCsvBtn.innerHTML;
+        exportCsvBtn.disabled = true;
+        exportCsvBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Exporting...';
+        
+        fetch('/api/report/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ report_type: 'CSV' })
+        })
+        .then(res => res.json())
+        .then(data => {
+            exportCsvBtn.disabled = false;
+            exportCsvBtn.innerHTML = btnText;
+            
+            if (data.success) {
+                showNotification("CSV export completed. Downloading file...", "success");
+                window.location.href = `/api/report/download/${data.report.id}`;
+            } else {
+                showNotification("CSV export failed: " + data.error, "danger");
+            }
+        })
+        .catch(err => {
+            exportCsvBtn.disabled = false;
+            exportCsvBtn.innerHTML = btnText;
+            console.error(err);
+        });
+    });
+
+    // Initial load
+    loadAlerts(1);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container text-center py-5 my-5 text-white">
+    <div class="row justify-content-center">
+        <div class="col-md-6 py-5">
+            <i class="fa-solid fa-triangle-exclamation text-danger mb-4" style="font-size: 90px; animation: critical-pulse 2s infinite;"></i>
+            <h1 class="display-3 fw-bold text-danger mb-2">404 - ERROR</h1>
+            <h4 class="mb-4">Destination Unreachable / Page Not Found</h4>
+            <p class="text-muted mb-5">
+                The terminal resource you requested is restricted or does not exist on the host server. Check your parameters or return to the main dashboard.
+            </p>
+            <a href="{{ url_for('views.dashboard') }}" class="btn btn-cyber"><i class="fa-solid fa-home me-2"></i>Return to SOC Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

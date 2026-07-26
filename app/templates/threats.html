@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+
+{% block page_title %}Machine Learning Detection Diagnostics{% endblock %}
+
+{% block content %}
+<div class="container-fluid text-white">
+    <!-- Model training metadata header -->
+    <div class="card-cyber p-4 mb-4">
+        <div class="row align-items-center g-3">
+            <div class="col-md-8">
+                <h5 class="mb-1"><i class="fa-solid fa-brain text-info me-2"></i>Random Forest Detection Engine</h5>
+                <p class="text-muted mb-0" style="font-size: 13px;">
+                    This dashboard shows the training performance and structural diagnostics of the Random Forest Classifier. The model classifies network packets into 7 distinct categories using CICIDS2017 features.
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <span class="badge bg-success-subtle text-success p-2 border border-success" style="font-size: 12px;">
+                    <i class="fa-solid fa-circle-check me-1"></i>Classifier Active
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick stats grid -->
+    <div class="row g-3 mb-4" id="ml-stats-cards">
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted fw-semibold" style="font-size: 12px;">Test Accuracy</span>
+                    <i class="fa-solid fa-crosshairs text-info"></i>
+                </div>
+                <h3 class="fw-bold mb-0 text-info" id="val-accuracy">-</h3>
+                <small class="text-muted" style="font-size: 10px;">Classification success rate</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted fw-semibold" style="font-size: 12px;">Precision (Macro)</span>
+                    <i class="fa-solid fa-bullseye text-primary"></i>
+                </div>
+                <h3 class="fw-bold mb-0 text-primary" id="val-precision">-</h3>
+                <small class="text-muted" style="font-size: 10px;">Positive predictive value</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted fw-semibold" style="font-size: 12px;">Recall (Macro)</span>
+                    <i class="fa-solid fa-rotate text-warning"></i>
+                </div>
+                <h3 class="fw-bold mb-0 text-warning" id="val-recall">-</h3>
+                <small class="text-muted" style="font-size: 10px;">Classifier sensitivity</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted fw-semibold" style="font-size: 12px;">F1 Score (Macro)</span>
+                    <i class="fa-solid fa-scale-balanced text-success"></i>
+                </div>
+                <h3 class="fw-bold mb-0 text-success" id="val-f1">-</h3>
+                <small class="text-muted" style="font-size: 10px;">Harmonic mean of accuracy metrics</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row: Feature Importance and ROC Curve -->
+    <div class="row g-3 mb-4">
+        <!-- Feature Importance (Horizontal Bar) -->
+        <div class="col-lg-6">
+            <div class="card-cyber p-4">
+                <h6 class="border-bottom border-secondary pb-2 mb-3"><i class="fa-solid fa-list-ol me-2 text-info"></i>Feature Importance Rankings</h6>
+                <div style="position: relative; height: 320px;">
+                    <canvas id="chart-feature-importance"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ROC Curve (Line plot) -->
+        <div class="col-lg-6">
+            <div class="card-cyber p-4">
+                <h6 class="border-bottom border-secondary pb-2 mb-3"><i class="fa-solid fa-bezier-curve me-2 text-info"></i>Multi-Class ROC Curves (Test Evaluation)</h6>
+                <div style="position: relative; height: 320px;">
+                    <canvas id="chart-roc-curve"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <!-- Confusion Matrix -->
+        <div class="col-lg-7">
+            <div class="card-cyber p-4">
+                <h6 class="border-bottom border-secondary pb-2 mb-3"><i class="fa-solid fa-table-cells me-2 text-info"></i>Confusion Matrix (Actual vs Predicted)</h6>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-dark text-center border-secondary align-middle mb-0" id="matrix-table" style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">
+                        <thead>
+                            <!-- Will be dynamically generated -->
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="py-4 text-muted">Awaiting model diagnostic data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Class-specific Metrics -->
+        <div class="col-lg-5">
+            <div class="card-cyber p-4">
+                <h6 class="border-bottom border-secondary pb-2 mb-3"><i class="fa-solid fa-calculator me-2 text-info"></i>Performance breakdown per Traffic Class</h6>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover border-secondary mb-0" style="font-size: 12px;" id="metrics-per-class-table">
+                        <thead>
+                            <tr class="text-muted">
+                                <th>Class Label</th>
+                                <th>Precision</th>
+                                <th>Recall</th>
+                                <th>F1 Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Will be dynamically populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Fetch ML Diagnostics
+    fetch('/api/admin/model_info')
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success || !data.trained) {
+                showNotification("Random Forest Model metrics not loaded. Train the model first.", "warning");
+                return;
+            }
+            
+            const meta = data.metadata;
+            
+            // Populate stats text
+            document.getElementById('val-accuracy').textContent = `${(meta.accuracy * 100).toFixed(2)}%`;
+            document.getElementById('val-precision').textContent = `${(meta.precision_avg * 100).toFixed(2)}%`;
+            document.getElementById('val-recall').textContent = `${(meta.recall_avg * 100).toFixed(2)}%`;
+            document.getElementById('val-f1').textContent = `${(meta.f1_avg * 100).toFixed(2)}%`;
+
+            // 1. Plot Feature Importance
+            const featLabels = Object.keys(meta.feature_importance);
+            const featValues = Object.values(meta.feature_importance);
+            
+            const ctxFeat = document.getElementById('chart-feature-importance').getContext('2d');
+            new Chart(ctxFeat, {
+                type: 'bar',
+                data: {
+                    labels: featLabels.map(l => l.replace(/_/g, ' ')),
+                    datasets: [{
+                        data: featValues,
+                        backgroundColor: 'rgba(14, 165, 233, 0.7)',
+                        borderColor: '#0ea5e9',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' } },
+                        y: { grid: { display: false }, ticks: { color: '#f8fafc', font: { size: 10 } } }
+                    }
+                }
+            });
+
+            // 2. Plot ROC Curves
+            const ctxRoc = document.getElementById('chart-roc-curve').getContext('2d');
+            const datasets = [];
+            const palette = ['#ef4444', '#f97316', '#eab308', '#6366f1', '#a855f7', '#0ea5e9', '#10b981'];
+            
+            let colorIdx = 0;
+            for (const [className, points] of Object.entries(meta.roc_curve)) {
+                // Map points to [{x: fpr, y: tpr}]
+                const coordinates = points.fpr.map((fpr, i) => ({ x: fpr, y: points.tpr[i] }));
+                
+                datasets.push({
+                    label: className,
+                    data: coordinates,
+                    borderColor: palette[colorIdx % palette.length],
+                    borderWidth: 1.5,
+                    fill: false,
+                    tension: 0.1,
+                    pointRadius: 2
+                });
+                colorIdx++;
+            }
+            
+            // Add baseline diagonal
+            datasets.push({
+                label: 'Random Guess',
+                data: [{x: 0, y: 0}, {x: 1, y: 1}],
+                borderColor: '#475569',
+                borderWidth: 1,
+                borderDash: [5, 5],
+                fill: false,
+                pointRadius: 0
+            });
+
+            new Chart(ctxRoc, {
+                type: 'line',
+                data: { datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 10, font: { size: 9 } } }
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            min: 0,
+                            max: 1,
+                            grid: { color: '#1e293b' },
+                            ticks: { color: '#64748b' },
+                            title: { display: true, text: 'False Positive Rate (FPR)', color: '#94a3b8' }
+                        },
+                        y: {
+                            min: 0,
+                            max: 1.05,
+                            grid: { color: '#1e293b' },
+                            ticks: { color: '#64748b' },
+                            title: { display: true, text: 'True Positive Rate (TPR)', color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+
+            // 3. Render Confusion Matrix Table
+            const classes = meta.classes;
+            const matrix = meta.confusion_matrix;
+            const matrixTable = document.getElementById('matrix-table');
+            
+            // Generate header
+            let headerHTML = '<tr><th class="border-secondary">Actual \\ Pred</th>';
+            classes.forEach(c => {
+                headerHTML += `<th class="border-secondary text-info">${c}</th>`;
+            });
+            headerHTML += '</tr>';
+            matrixTable.querySelector('thead').innerHTML = headerHTML;
+            
+            // Generate body
+            let bodyHTML = '';
+            classes.forEach((actualClass, rowIdx) => {
+                bodyHTML += `<tr><td class="fw-bold text-info border-secondary">${actualClass}</td>`;
+                classes.forEach((predClass, colIdx) => {
+                    const value = matrix[rowIdx][colIdx];
+                    const isDiagonal = rowIdx === colIdx;
+                    const bgStyle = isDiagonal ? 'background-color: rgba(16, 185, 129, 0.15); font-weight: bold; color: var(--sev-low);' : 'color: #cbd5e1;';
+                    bodyHTML += `<td class="border-secondary" style="${bgStyle}">${value}</td>`;
+                });
+                bodyHTML += '</tr>';
+            });
+            matrixTable.querySelector('tbody').innerHTML = bodyHTML;
+
+            // 4. Render Class specific Metrics table
+            const metricsTbody = document.querySelector('#metrics-per-class-table tbody');
+            metricsTbody.innerHTML = '';
+            
+            classes.forEach(c => {
+                const metric = meta.metrics_per_class[c];
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="fw-semibold text-white">${c}</td>
+                    <td class="font-monospace text-info">${(metric['precision'] * 100).toFixed(1)}%</td>
+                    <td class="font-monospace text-info">${(metric['recall'] * 100).toFixed(1)}%</td>
+                    <td class="font-monospace text-info fw-bold">${(metric['f1-score'] * 100).toFixed(1)}%</td>
+                `;
+                metricsTbody.appendChild(tr);
+            });
+        });
+});
+</script>
+{% endblock %}

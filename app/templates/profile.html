@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block page_title %}Operator Profile Settings{% endblock %}
+
+{% block content %}
+<div class="container-fluid text-white">
+    <div class="row g-4 justify-content-center">
+        <!-- Profile info card -->
+        <div class="col-md-5">
+            <div class="card-cyber p-4 text-center">
+                <div class="mb-4 position-relative d-inline-block mx-auto">
+                    <img src="{{ url_for('static', filename='images/profiles/' + current_user.profile_pic) }}" 
+                         alt="Avatar" width="120" height="120" class="rounded-circle border border-3 border-info"
+                         id="profile-avatar-large"
+                         onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed={{ current_user.username }}'">
+                </div>
+                
+                <h4 class="mb-1 text-white fw-bold">{{ current_user.username }}</h4>
+                <span class="badge bg-secondary-subtle border border-secondary px-3 py-1 mb-4" style="font-size: 11px;">
+                    <i class="fa-solid fa-id-card-clip me-1 text-info"></i>{{ current_user.role }}
+                </span>
+                
+                <div class="text-start border-top border-secondary pt-3 mt-2" style="font-size: 13px;">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Register email:</span>
+                        <span class="fw-medium">{{ current_user.email }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Account status:</span>
+                        <span class="text-success"><span class="status-indicator status-active"></span>Active</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Role privileges:</span>
+                        <span class="text-info fw-semibold">{{ 'Superuser (Root)' if current_user.is_admin else 'Standard Analyst' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change Password card -->
+        <div class="col-md-6">
+            <div class="card-cyber p-4">
+                <h5 class="border-bottom border-secondary pb-2 mb-3"><i class="fa-solid fa-lock text-info me-2"></i>Update Security Access Key</h5>
+                
+                <form id="change-password-form">
+                    <div class="mb-3">
+                        <label for="old_password" class="form-label text-muted">Current Access Key</label>
+                        <input type="password" class="form-control form-cyber" id="old_password" placeholder="••••••••" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label text-muted">New Access Key</label>
+                        <input type="password" class="form-control form-cyber" id="new_password" placeholder="••••••••" required>
+                        <small class="text-muted mt-1 d-block" style="font-size: 10px;">Make sure your key is long and contains symbols.</small>
+                    </div>
+                    <div class="mb-4">
+                        <label for="confirm_password" class="form-label text-muted">Re-enter New Access Key</label>
+                        <input type="password" class="form-control form-cyber" id="confirm_password" placeholder="••••••••" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-cyber w-100" id="submit-pwd-btn">
+                        <i class="fa-solid fa-user-shield me-2"></i>Re-Authorize & Save Key
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('change-password-form');
+    const submitBtn = document.getElementById('submit-pwd-btn');
+    
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const old_password = document.getElementById('old_password').value;
+        const new_password = document.getElementById('new_password').value;
+        const confirm_password = document.getElementById('confirm_password').value;
+        
+        if (new_password !== confirm_password) {
+            showNotification("New passwords do not match.", "danger");
+            return;
+        }
+        
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving key...';
+        
+        fetch('/change_password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ old_password, new_password })
+        })
+        .then(res => res.json())
+        .then(data => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+            
+            if (data.success) {
+                showNotification("Access key updated successfully.", "success");
+                form.reset();
+            } else {
+                showNotification("Failed to update password: " + data.error, "danger");
+            }
+        })
+        .catch(err => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+            showNotification("Error saving security credentials.", "danger");
+            console.error(err);
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="login-body">
+    <div class="login-box">
+        <div class="text-center mb-4">
+            <h1 class="glow-primary text-white"><i class="fa-solid fa-shield-halved text-info me-2"></i>AI-NIDS</h1>
+            <p class="text-muted">Security Operations Center Portal</p>
+        </div>
+        
+        <!-- Alerts block -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} bg-dark text-{{ category }} border-{{ category }} py-2" style="font-size: 13px;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <form id="loginForm" method="POST" action="{{ url_for('auth.login') }}">
+            <div class="mb-3">
+                <label for="username" class="form-label text-muted">Operator Username</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-dark border-secondary text-info"><i class="fa-solid fa-user"></i></span>
+                    <input type="text" class="form-control form-cyber" id="username" name="username" placeholder="e.g. admin" required autocomplete="off">
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label for="password" class="form-label text-muted">Access Keyphrase</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-dark border-secondary text-info"><i class="fa-solid fa-lock"></i></span>
+                    <input type="password" class="form-control form-cyber" id="password" name="password" placeholder="••••••••" required>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-cyber w-100 mb-3"><i class="fa-solid fa-key me-2"></i>Authenticate Credentials</button>
+        </form>
+
+        <div class="mt-4 p-3 rounded bg-dark border border-secondary text-center" style="font-size: 11px; color: var(--text-muted);">
+            <div class="fw-bold text-info"><i class="fa-solid fa-circle-info me-1"></i>Default Local Credentials</div>
+            <div>Admin: <code class="text-white">admin</code> / <code class="text-white">password123</code></div>
+            <div>Analyst: <code class="text-white">analyst</code> / <code class="text-white">password123</code></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}

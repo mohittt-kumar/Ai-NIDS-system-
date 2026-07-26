@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block page_title %}AI-NIDS Specifications & Capabilities{% endblock %}
+
+{% block content %}
+<div class="container py-5 text-white">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card-cyber p-5">
+                <h2 class="text-info mb-4 border-bottom border-secondary pb-3"><i class="fa-solid fa-list-check me-2"></i>System Integration Matrix</h2>
+                
+                <div class="row g-4 my-2 text-start">
+                    <div class="col-md-6">
+                        <h5 class="text-white mb-3">Core Modules</h5>
+                        <ul class="list-unstyled" style="font-size: 13px;">
+                            <li class="mb-2"><i class="fa-solid fa-circle-check text-info me-2"></i><b>Authentication</b>: Secure sessions, hashed credentials, and role separations (Admin/Analyst).</li>
+                            <li class="mb-2"><i class="fa-solid fa-circle-check text-info me-2"></i><b>Interactive Monitor</b>: Ingests packets via Scapy or simulates them in sliding windows.</li>
+                            <li class="mb-2"><i class="fa-solid fa-circle-check text-info me-2"></i><b>Rule-Based Detection</b>: Instantly detects port sweeps, flood spikes, and brute force sequences.</li>
+                            <li class="mb-2"><i class="fa-solid fa-circle-check text-info me-2"></i><b>Machine Learning Engine</b>: Predicts traffic vectors with confidence indicators.</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5 class="text-white mb-3">Integrations Stack</h5>
+                        <ul class="list-unstyled" style="font-size: 13px;">
+                            <li class="mb-2"><i class="fa-solid fa-circle-check text-success me-2"></i><b>Backend Server</b>: Flask Blueprint structure with API controllers.</li>
+                            <li class="mb-2"><i class="fa-solid fa-circle-check text-success me-2"></i><b>Database Engine</b>: SQLite instance with Flask-SQLAlchemy ORM.</li>
+                            <li class="mb-2"><i class="fa-solid fa-circle-check text-success me-2"></i><b>Analytics</b>: Interactive Chart.js charts and metrics cards.</li>
+                            <li class="mb-2"><i class="fa-solid fa-circle-check text-success me-2"></i><b>Compliance Reports</b>: Exports alert audits to PDF (via ReportLab) and CSV.</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="mt-4 text-center">
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-cyber"><i class="fa-solid fa-right-to-bracket me-2"></i>Access SOC Console</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

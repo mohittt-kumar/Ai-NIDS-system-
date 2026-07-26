@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-NIDS | Security Operations Center</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/style.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icon sets -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom styling -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <!-- Sidebar Navigation -->
+    <div class="sidebar-wrapper">
+        <div class="sidebar-header">
+            <a href="{{ url_for('views.dashboard') }}" class="sidebar-logo">
+                <i class="fa-solid fa-shield-halved"></i>AI-NIDS
+            </a>
+        </div>
+        <ul class="sidebar-nav">
+            <li class="sidebar-nav-item {% if request.path == url_for('views.dashboard') %}active{% endif %}">
+                <a href="{{ url_for('views.dashboard') }}" class="sidebar-nav-link">
+                    <i class="fa-solid fa-chart-line"></i>SOC Dashboard
+                </a>
+            </li>
+            <li class="sidebar-nav-item {% if request.path == url_for('views.monitor') %}active{% endif %}">
+                <a href="{{ url_for('views.monitor') }}" class="sidebar-nav-link">
+                    <i class="fa-solid fa-ethernet"></i>Packet Monitor
+                </a>
+            </li>
+            <li class="sidebar-nav-item {% if request.path == url_for('views.threats') %}active{% endif %}">
+                <a href="{{ url_for('views.threats') }}" class="sidebar-nav-link">
+                    <i class="fa-solid fa-brain"></i>AI Engine
+                </a>
+            </li>
+            <li class="sidebar-nav-item {% if request.path == url_for('views.alerts') %}active{% endif %}">
+                <a href="{{ url_for('views.alerts') }}" class="sidebar-nav-link">
+                    <i class="fa-solid fa-triangle-exclamation"></i>Alert Center
+                </a>
+            </li>
+            <li class="sidebar-nav-item {% if request.path == url_for('views.reports') %}active{% endif %}">
+                <a href="{{ url_for('views.reports') }}" class="sidebar-nav-link">
+                    <i class="fa-solid fa-file-invoice"></i>Reports
+                </a>
+            </li>
+            <li class="sidebar-nav-item {% if request.path == url_for('views.settings') %}active{% endif %}">
+                <a href="{{ url_for('views.settings') }}" class="sidebar-nav-link">
+                    <i class="fa-solid fa-sliders"></i>Thresholds
+                </a>
+            </li>
+            <li class="sidebar-nav-item {% if request.path == url_for('views.profile') %}active{% endif %}">
+                <a href="{{ url_for('views.profile') }}" class="sidebar-nav-link">
+                    <i class="fa-solid fa-user-shield"></i>My Profile
+                </a>
+            </li>
+            {% if current_user.is_admin %}
+            <li class="sidebar-nav-item {% if request.path == url_for('views.admin') %}active{% endif %}">
+                <a href="{{ url_for('views.admin') }}" class="sidebar-nav-link">
+                    <i class="fa-solid fa-user-gear"></i>Admin Panel
+                </a>
+            </li>
+            {% endif %}
+            
+            <li class="sidebar-nav-item mt-4">
+                <a href="{{ url_for('auth.logout') }}" class="sidebar-nav-link text-danger">
+                    <i class="fa-solid fa-right-from-bracket"></i>Log Out
+                </a>
+            </li>
+        </ul>
+        
+        <!-- Live status bar in sidebar bottom -->
+        <div style="position: absolute; bottom: 20px; left: 20px; right: 20px; font-size: 11px; color: var(--text-muted);">
+            <div class="d-flex align-items-center mb-1">
+                <span id="sidebar-status-dot" class="status-indicator status-inactive"></span>
+                <span id="sidebar-status-text">Engine: Off</span>
+            </div>
+            <div class="d-flex align-items-center">
+                <i class="fa-solid fa-microchip me-2"></i>
+                <span id="sidebar-mode-text">Mode: Simulated</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top header bar -->
+    <div class="top-bar">
+        <div>
+            <h4 class="mb-0 text-white font-weight-bold" id="page-title">{% block page_title %}Security Operations Center{% endblock %}</h4>
+            <small class="text-muted" id="topbar-clock"></small>
+        </div>
+        <div class="d-flex align-items-center">
+            <!-- Diagnostics badges -->
+            <button id="toggle-sniff-btn" class="btn btn-sm btn-outline-info me-3 d-flex align-items-center">
+                <i class="fa-solid fa-play me-1"></i>Start Sniffing
+            </button>
+            <div class="d-flex align-items-center text-white">
+                <div class="text-end me-2">
+                    <div class="fw-bold">{{ current_user.username }}</div>
+                    <small class="text-muted" style="font-size: 10px;">{{ current_user.role }}</small>
+                </div>
+                <img src="{{ url_for('static', filename='images/profiles/' + current_user.profile_pic) }}" 
+                     alt="Profile" width="36" height="36" class="rounded-circle border border-info"
+                     onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed={{ current_user.username }}'">
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Main Render Block -->
+    <div class="{% if current_user.is_authenticated %}main-content{% endif %}">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="liveToast" class="toast align-items-center text-white bg-dark border-info" role="alert" aria-live="assertive" aria-atomic="true" style="display: none; border-left: 5px solid var(--primary) !important;">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fa-solid fa-bell text-info me-2" id="toast-icon"></i>
+                    <span id="toast-message">Message text</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="document.getElementById('liveToast').style.display='none'"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JavaScript Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Unified top bar engine toggler and clock -->
+    {% if current_user.is_authenticated %}
+    <script>
+        // System live updates
+        function updateClock() {
+            const clockEl = document.getElementById('topbar-clock');
+            if (clockEl) {
+                const now = new Date();
+                clockEl.textContent = now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+            }
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Toast notifications utility
+        function showNotification(message, type = 'info') {
+            const toastEl = document.getElementById('liveToast');
+            const messageEl = document.getElementById('toast-message');
+            const iconEl = document.getElementById('toast-icon');
+            
+            messageEl.textContent = message;
+            
+            // Set styles based on type
+            toastEl.className = "toast align-items-center text-white bg-dark border-0";
+            if (type === 'danger' || type === 'critical') {
+                toastEl.style.borderLeft = "5px solid var(--sev-critical) !important;";
+                toastEl.classList.add('border-danger');
+                iconEl.className = "fa-solid fa-radiation text-danger me-2";
+            } else if (type === 'warning') {
+                toastEl.style.borderLeft = "5px solid var(--sev-medium) !important;";
+                toastEl.classList.add('border-warning');
+                iconEl.className = "fa-solid fa-circle-exclamation text-warning me-2";
+            } else if (type === 'success') {
+                toastEl.style.borderLeft = "5px solid var(--sev-low) !important;";
+                toastEl.classList.add('border-success');
+                iconEl.className = "fa-solid fa-circle-check text-success me-2";
+            } else {
+                toastEl.style.borderLeft = "5px solid var(--primary) !important;";
+                toastEl.classList.add('border-info');
+                iconEl.className = "fa-solid fa-bell text-info me-2";
+            }
+            
+            toastEl.style.display = 'block';
+            setTimeout(() => {
+                toastEl.style.display = 'none';
+            }, 6000);
+        }
+
+        // Monitoring toggle controls
+        const toggleBtn = document.getElementById('toggle-sniff-btn');
+        const sidebarDot = document.getElementById('sidebar-status-dot');
+        const sidebarText = document.getElementById('sidebar-status-text');
+        const sidebarMode = document.getElementById('sidebar-mode-text');
+
+        function fetchEngineStatus() {
+            fetch('/api/packet/status')
+                .then(res => res.json())
+                .then(data => {
+                    const active = data.monitoring_active;
+                    const simulated = data.simulation_mode;
+
+                    if (active) {
+                        toggleBtn.className = "btn btn-sm btn-outline-danger me-3 d-flex align-items-center";
+                        toggleBtn.innerHTML = '<i class="fa-solid fa-stop me-1"></i>Stop Sniffing';
+                        sidebarDot.className = "status-indicator status-active";
+                        sidebarText.textContent = "Engine: Active";
+                    } else {
+                        toggleBtn.className = "btn btn-sm btn-outline-info me-3 d-flex align-items-center";
+                        toggleBtn.innerHTML = '<i class="fa-solid fa-play me-1"></i>Start Sniffing';
+                        sidebarDot.className = "status-indicator status-inactive";
+                        sidebarText.textContent = "Engine: Off";
+                    }
+
+                    sidebarMode.textContent = "Mode: " + (simulated ? "Simulated" : "Scapy Raw");
+                });
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            fetch('/api/packet/status')
+                .then(res => res.json())
+                .then(data => {
+                    const active = data.monitoring_active;
+                    const endpoint = active ? '/api/packet/stop' : '/api/packet/start';
+                    
+                    fetch(endpoint, { 
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({})
+                    })
+                    .then(res => res.json())
+                    .then(resData => {
+                        if (resData.success) {
+                            showNotification(active ? "Capture daemon suspended." : "Capture daemon launched.", active ? "warning" : "success");
+                            fetchEngineStatus();
+                            // If there is a page callback reload
+                            if (window.onEngineToggle) {
+                                window.onEngineToggle(!active);
+                            }
+                        } else {
+                            showNotification("Engine action failed: " + resData.error, "danger");
+                        }
+                    });
+                });
+        });
+
+        // Initialize status poll
+        fetchEngineStatus();
+        setInterval(fetchEngineStatus, 5000);
+    </script>
+    {% endif %}
+    {% block scripts %}{% endblock %}
+</body>
+</html>

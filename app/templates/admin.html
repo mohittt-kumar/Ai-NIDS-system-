@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+
+{% block page_title %}SOC Administrator Control Console{% endblock %}
+
+{% block content %}
+<div class="container-fluid text-white">
+    <!-- Admin Tabs Navigation -->
+    <ul class="nav nav-tabs border-secondary mb-4" id="adminTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active text-info bg-transparent border-0 border-bottom border-info fw-bold me-3 px-3 pb-2" id="operators-tab" data-bs-toggle="tab" data-bs-target="#operators-panel" type="button" role="tab"><i class="fa-solid fa-users me-2"></i>Operator Management</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link text-muted bg-transparent border-0 fw-bold me-3 px-3 pb-2" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs-panel" type="button" role="tab"><i class="fa-solid fa-folder-open me-2"></i>System Audit Logs</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link text-muted bg-transparent border-0 fw-bold px-3 pb-2" id="system-tab" data-bs-toggle="tab" data-bs-target="#system-panel" type="button" role="tab"><i class="fa-solid fa-server me-2"></i>System Diagnostics</button>
+        </li>
+    </ul>
+
+    <!-- Tabs Content -->
+    <div class="tab-content" id="adminTabsContent">
+        <!-- 1. Operators Panel -->
+        <div class="tab-pane fade show active" id="operators-panel" role="tabpanel">
+            <div class="row g-4">
+                <!-- Add operator card -->
+                <div class="col-lg-4">
+                    <div class="card-cyber p-4">
+                        <h5 class="border-bottom border-secondary pb-2 mb-3"><i class="fa-solid fa-user-plus text-info me-2"></i>Provision New Operator</h5>
+                        
+                        <form id="create-user-form">
+                            <div class="mb-3">
+                                <label for="reg-username" class="form-label text-muted">Operator Username</label>
+                                <input type="text" class="form-control form-cyber" id="reg-username" required autocomplete="off">
+                            </div>
+                            <div class="mb-3">
+                                <label for="reg-email" class="form-label text-muted">Secure Email address</label>
+                                <input type="email" class="form-control form-cyber" id="reg-email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="reg-password" class="form-label text-muted">Assign Access Key</label>
+                                <input type="password" class="form-control form-cyber" id="reg-password" required>
+                            </div>
+                            <div class="mb-4">
+                                <label for="reg-role" class="form-label text-muted">Role Permissions</label>
+                                <select class="form-select form-cyber" id="reg-role" required>
+                                    <option value="Security Analyst">Security Analyst</option>
+                                    <option value="Admin">Administrator (Superuser)</option>
+                                </select>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-cyber w-100" id="create-user-btn">
+                                <i class="fa-solid fa-user-shield me-2"></i>Authorize Account
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Operators List -->
+                <div class="col-lg-8">
+                    <div class="card-cyber p-4">
+                        <h5 class="border-bottom border-secondary pb-2 mb-3"><i class="fa-solid fa-address-book text-info me-2"></i>Registered System Operators</h5>
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover border-secondary align-middle mb-0" id="users-table">
+                                <thead>
+                                    <tr class="text-muted" style="font-size: 12px;">
+                                        <th>ID</th>
+                                        <th>Operator Name</th>
+                                        <th>Email</th>
+                                        <th>Privilege Level</th>
+                                        <th>Created Date</th>
+                                        <th class="text-end">De-Authorize</th>
+                                    </tr>
+                                </thead>
+                                <tbody style="font-size: 13px;">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. System Audit Logs Panel -->
+        <div class="tab-pane fade" id="logs-panel" role="tabpanel">
+            <div class="card-cyber p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0 text-white"><i class="fa-solid fa-folder-open text-info me-2"></i>SOC Operational Audit Log</h5>
+                    <div class="d-flex gap-2">
+                        <select class="form-select form-select-sm form-cyber" id="log-type-filter" style="width: 150px;">
+                            <option value="All">All Log Categories</option>
+                            <option value="System">System status</option>
+                            <option value="Login">Operator logins</option>
+                            <option value="Alert">Alert events</option>
+                        </select>
+                        <button id="refresh-logs-btn" class="btn btn-sm btn-cyber"><i class="fa-solid fa-arrows-rotate"></i></button>
+                    </div>
+                </div>
+
+                <div class="table-responsive mb-3">
+                    <table class="table table-dark table-striped border-secondary mb-0 align-middle" id="logs-table">
+                        <thead>
+                            <tr class="text-muted" style="font-size: 12px;">
+                                <th>Log ID</th>
+                                <th>Timestamp (UTC)</th>
+                                <th>Category</th>
+                                <th>Level</th>
+                                <th>Audit Message description</th>
+                            </tr>
+                        </thead>
+                        <tbody style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">
+                            <!-- Dynamic -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Log Paging -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="text-muted" style="font-size: 13px;">
+                        Page <span id="log-pag-current">1</span> of <span id="log-pag-total">1</span>
+                    </div>
+                    <div class="btn-group gap-1">
+                        <button class="btn btn-sm btn-cyber-outline" id="log-pag-prev-btn" disabled>Prev</button>
+                        <button class="btn btn-sm btn-cyber-outline" id="log-pag-next-btn" disabled>Next</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. System Diagnostics Panel -->
+        <div class="tab-pane fade" id="system-panel" role="tabpanel">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card-cyber p-4 h-100">
+                        <h5 class="border-bottom border-secondary pb-2 mb-3"><i class="fa-solid fa-server text-info me-2"></i>NIDS Runtime Environments</h5>
+                        <div style="font-size: 13px;">
+                            <div class="d-flex justify-content-between border-bottom border-secondary py-2">
+                                <span class="text-muted">Flask Version:</span>
+                                <span class="fw-bold">3.0.0</span>
+                            </div>
+                            <div class="d-flex justify-content-between border-bottom border-secondary py-2">
+                                <span class="text-muted">OS Platform:</span>
+                                <span>Windows NT</span>
+                            </div>
+                            <div class="d-flex justify-content-between border-bottom border-secondary py-2">
+                                <span class="text-muted">SQLite Ingest Engine:</span>
+                                <span class="text-success"><i class="fa-solid fa-circle-check me-1"></i>Active</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-2">
+                                <span class="text-muted">Scapy Sniff Capabilities:</span>
+                                <span id="diag-scapy">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card-cyber p-4 h-100">
+                        <h5 class="border-bottom border-secondary pb-2 mb-3"><i class="fa-solid fa-brain text-info me-2"></i>Random Forest Metadata</h5>
+                        <div style="font-size: 13px;" id="diag-model-meta">
+                            <div class="text-muted py-4 text-center">Loading model status parameters...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Tab switching style adjustments
+    const triggerTabList = [].slice.call(document.querySelectorAll('#adminTabs button'));
+    triggerTabList.forEach(triggerEl => {
+        triggerEl.addEventListener('click', (event) => {
+            event.preventDefault();
+            triggerTabList.forEach(el => {
+                el.classList.remove('text-info', 'border-bottom', 'border-info');
+                el.classList.add('text-muted');
+            });
+            triggerEl.classList.remove('text-muted');
+            triggerEl.classList.add('text-info', 'border-bottom', 'border-info');
+        });
+    });
+
+    // 1. Operator Controls
+    const userTbody = document.querySelector('#users-table tbody');
+    const createUserForm = document.getElementById('create-user-form');
+    const createUserBtn = document.getElementById('create-user-btn');
+
+    function loadUsers() {
+        userTbody.innerHTML = '<tr><td colspan="6" class="text-center py-3 text-muted"><span class="spinner-border spinner-border-sm me-2 text-info"></span>Retrieving credentials...</td></tr>';
+        
+        fetch('/api/admin/users')
+            .then(res => res.json())
+            .then(data => {
+                userTbody.innerHTML = '';
+                
+                data.forEach(u => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="text-info font-monospace">#${u.id}</td>
+                        <td class="fw-semibold">${u.username}</td>
+                        <td>${u.email}</td>
+                        <td><span class="badge ${u.role === 'Admin' ? 'bg-danger' : 'bg-primary'} px-2 py-1">${u.role}</span></td>
+                        <td class="text-muted">${u.created_at}</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-danger py-0 px-2 delete-user-btn" data-id="${u.id}">
+                                <i class="fa-solid fa-user-xmark"></i>
+                            </button>
+                        </td>
+                    `;
+                    userTbody.appendChild(tr);
+                });
+                
+                // Bind delete button
+                document.querySelectorAll('.delete-user-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.getAttribute('data-id');
+                        deleteUser(id);
+                    });
+                });
+            })
+            .catch(err => console.error("Error fetching user list: ", err));
+    }
+
+    createUserForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const username = document.getElementById('reg-username').value;
+        const email = document.getElementById('reg-email').value;
+        const password = document.getElementById('reg-password').value;
+        const role = document.getElementById('reg-role').value;
+        
+        const originalText = createUserBtn.innerHTML;
+        createUserBtn.disabled = true;
+        createUserBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+        
+        fetch('/api/admin/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, email, password, role })
+        })
+        .then(res => res.json())
+        .then(data => {
+            createUserBtn.disabled = false;
+            createUserBtn.innerHTML = originalText;
+            
+            if (data.success) {
+                showNotification(`Operator account '${username}' created.`, 'success');
+                createUserForm.reset();
+                loadUsers();
+            } else {
+                showNotification("Failed to create operator: " + data.error, "danger");
+            }
+        })
+        .catch(err => {
+            createUserBtn.disabled = false;
+            createUserBtn.innerHTML = originalText;
+            console.error(err);
+        });
+    });
+
+    function deleteUser(id) {
+        if (confirm(`Revoke authorization and delete Operator ID #${id}?`)) {
+            fetch(`/api/admin/users/${id}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification("Operator account deleted.", "warning");
+                        loadUsers();
+                    } else {
+                        showNotification("Action failed: " + data.error, "danger");
+                    }
+                });
+        }
+    }
+
+    // 2. Audit Logs Controls
+    let logsPage = 1;
+    const logsTbody = document.querySelector('#logs-table tbody');
+    const logTypeFilter = document.getElementById('log-type-filter');
+    const refreshLogsBtn = document.getElementById('refresh-logs-btn');
+    const logCurrentPageEl = document.getElementById('log-pag-current');
+    const logTotalPageEl = document.getElementById('log-pag-total');
+    const logPrevBtn = document.getElementById('log-pag-prev-btn');
+    const logNextBtn = document.getElementById('log-pag-next-btn');
+
+    function loadLogs(page = 1) {
+        logsPage = page;
+        logsTbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2 text-info"></span>Querying logs...</td></tr>';
+        
+        fetch(`/api/admin/logs?page=${page}&log_type=${logTypeFilter.value}`)
+            .then(res => res.json())
+            .then(data => {
+                logsTbody.innerHTML = '';
+                
+                logCurrentPageEl.textContent = data.page;
+                logTotalPageEl.textContent = data.pages || 1;
+                
+                logPrevBtn.disabled = (data.page <= 1);
+                logNextBtn.disabled = (data.page >= data.pages);
+                
+                if (data.logs.length === 0) {
+                    logsTbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">No audit logs matching selection found.</td></tr>';
+                    return;
+                }
+                
+                data.logs.forEach(l => {
+                    let levelClass = 'text-info';
+                    if (l.level === 'WARNING') levelClass = 'text-warning';
+                    else if (l.level === 'ERROR') levelClass = 'text-danger';
+                    
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="text-muted">#${l.id}</td>
+                        <td class="text-muted">${l.timestamp}</td>
+                        <td><span class="badge bg-secondary-subtle border border-secondary px-2 py-0">${l.log_type}</span></td>
+                        <td class="${levelClass} fw-bold">${l.level}</td>
+                        <td>${l.message}</td>
+                    `;
+                    logsTbody.appendChild(tr);
+                });
+            })
+            .catch(err => {
+                console.error("Error loading system logs: ", err);
+                logsTbody.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-danger">Failed to fetch logs from database.</td></tr>';
+            });
+    }
+
+    logTypeFilter.addEventListener('change', () => loadLogs(1));
+    refreshLogsBtn.addEventListener('click', () => loadLogs(1));
+    logPrevBtn.addEventListener('click', () => { if (logsPage > 1) loadLogs(logsPage - 1); });
+    logNextBtn.addEventListener('click', () => { loadLogs(logsPage + 1); });
+
+    // 3. System Diagnostics
+    function loadSystemDiagnostics() {
+        const scapyEl = document.getElementById('diag-scapy');
+        const metaEl = document.getElementById('diag-model-meta');
+        
+        // Fetch packet status to check scapy
+        fetch('/api/packet/status')
+            .then(res => res.json())
+            .then(data => {
+                scapyEl.innerHTML = data.simulation_mode 
+                    ? '<span class="text-warning"><i class="fa-solid fa-triangle-exclamation me-1"></i>Fallback active (Simulation mode)</span>'
+                    : '<span class="text-success"><i class="fa-solid fa-circle-check me-1"></i>Raw capturing interfaces active</span>';
+            });
+            
+        // Fetch ML model info
+        fetch('/api/admin/model_info')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.trained) {
+                    const meta = data.metadata;
+                    metaEl.innerHTML = `
+                        <div class="d-flex justify-content-between border-bottom border-secondary py-2">
+                            <span class="text-muted">Algorithm:</span>
+                            <span class="text-info font-monospace">RandomForestClassifier</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-bottom border-secondary py-2">
+                            <span class="text-muted">Training Accuracy:</span>
+                            <span class="text-success">${(meta.accuracy * 100).toFixed(2)}%</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-bottom border-secondary py-2">
+                            <span class="text-muted">Classification Labels:</span>
+                            <span>${meta.classes.join(', ')}</span>
+                        </div>
+                        <div class="d-flex justify-content-between py-2">
+                            <span class="text-muted">Training Dataset:</span>
+                            <span>cicids2017_sample.csv (15,000 rows)</span>
+                        </div>
+                    `;
+                } else {
+                    metaEl.innerHTML = `<div class="text-warning py-4 text-center"><i class="fa-solid fa-circle-exclamation me-1"></i>Model not trained. Run train_model.py first.</div>`;
+                }
+            });
+    }
+
+    // Initial runs
+    loadUsers();
+    loadLogs(1);
+    loadSystemDiagnostics();
+});
+</script>
+{% endblock %}
