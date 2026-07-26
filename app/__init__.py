@@ -16,6 +16,12 @@ def create_app(config_class=Config):
     db.init_app(app)
     login_manager.init_app(app)
     
+    # Ensure directories exist
+    os.makedirs(app.instance_path, exist_ok=True)
+    os.makedirs(os.path.join(os.path.dirname(app.root_path), 'trained_model'), exist_ok=True)
+    os.makedirs(os.path.join(os.path.dirname(app.root_path), 'dataset'), exist_ok=True)
+    os.makedirs(os.path.join(app.root_path, 'static', 'images', 'profiles'), exist_ok=True)
+    
     # Import routes
     from app.routes.auth import auth_bp
     from app.routes.views import views_bp
@@ -40,4 +46,13 @@ def create_app(config_class=Config):
         from flask import render_template
         return render_template('404.html'), 404
         
+    # Initialize database schemas and default seeds
+    with app.app_context():
+        from app.models.setting import Setting
+        from app.models.user import User
+        db.create_all()
+        Setting.initialize_defaults()
+        User.initialize_defaults()
+        
     return app
+
