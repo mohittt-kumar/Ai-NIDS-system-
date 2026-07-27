@@ -69,12 +69,21 @@ function App() {
     toastTimeoutRef.current = setTimeout(() => setToast(null), 6000);
   };
 
+  const activeRef = useRef(monitoringActive);
+  useEffect(() => {
+    activeRef.current = monitoringActive;
+  }, [monitoringActive]);
+
   // Sniffing background simulation loop (Standard, leak-proof interval hook)
   useEffect(() => {
     if (!monitoringActive) return;
 
     // Loop that simulates packet arrivals every 1200ms
     const intervalId = setInterval(() => {
+      if (!activeRef.current) {
+        clearInterval(intervalId);
+        return;
+      }
       const isAttack = Math.random() > 0.82; // 18% chance of attack burst on each tick
       let newPackets = [];
 
