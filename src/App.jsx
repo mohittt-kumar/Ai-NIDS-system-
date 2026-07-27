@@ -267,7 +267,7 @@ function App() {
                 {monitoringActive ? 'Stop Sniffing' : 'Start Sniffing'}
               </button>
               
-              <div className="d-flex align-items-center">
+              <div className="d-flex align-items-center me-2">
                 <div className="text-end me-2" style={{ lineHeight: '1.2' }}>
                   <div className="fw-bold text-dark" style={{ fontSize: '13px' }}>{activeUser.username}</div>
                   <small className="text-muted" style={{ fontSize: '10px' }}>{activeUser.role}</small>
@@ -278,8 +278,9 @@ function App() {
                 />
               </div>
               
-              <button onClick={handleLogout} className="btn btn-sm btn-outline-danger py-1 px-3 fw-bold">
+              <button onClick={handleLogout} className="btn btn-sm btn-outline-danger d-flex align-items-center gap-2 py-1 px-3 fw-bold" title="Sign Out">
                 <i className="fa-solid fa-right-from-bracket"></i>
+                <span className="d-none d-md-inline" style={{ fontSize: '12px' }}>Sign Out</span>
               </button>
             </div>
           </div>
