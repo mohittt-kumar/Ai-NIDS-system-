@@ -72,29 +72,48 @@ function App() {
   // Sniffing background simulation loop
   useEffect(() => {
     if (monitoringActive) {
-      // Loop that simulates packet arrivals every 1000ms
+      // Loop that simulates packet arrivals every 1200ms
       captureTimerRef.current = setInterval(() => {
-        // 1. Generate new packet
-        const newPacket = nids.generateSimulatedPacket();
-        
+        const isAttack = Math.random() > 0.82; // 18% chance of attack burst on each tick
+        let newPackets = [];
+
+        if (isAttack) {
+          const patterns = ['Port Scan', 'SYN Flood', 'Ping Flood', 'Brute Force', 'Web Attack'];
+          const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+          const attackerIp = ['185.220.101.5', '45.133.1.20', '198.51.100.42'][Math.floor(Math.random() * 3)];
+          
+          // Generate a burst of 18-25 packets spanning a short duration
+          const burstSize = 18 + Math.floor(Math.random() * 8);
+          const now = new Date();
+          for (let i = 0; i < burstSize; i++) {
+            const p = nids.generateSimulatedPacket(pattern);
+            p.src_ip = attackerIp;
+            p.timestamp = new Date(now.getTime() - i * 35).toISOString(); // Offset slightly
+            newPackets.push(p);
+          }
+        } else {
+          newPackets.push(nids.generateSimulatedPacket('Normal'));
+        }
+
         // Load latest state histories
         const currentPackets = JSON.parse(localStorage.getItem('nids_packets') || '[]');
-        const updatedPackets = [newPacket, ...currentPackets].slice(0, 200); // Limit to 200 items
+        const updatedPackets = [...newPackets, ...currentPackets].slice(0, 200);
         localStorage.setItem('nids_packets', JSON.stringify(updatedPackets));
         setPackets(updatedPackets);
 
-        // 2. Evaluate heuristic rules
-        const ruleResult = nids.processDetectionRules(newPacket, updatedPackets);
+        // Evaluate heuristic rules for the first packet in the list (the trigger)
+        const triggerPacket = newPackets[0];
+        const ruleResult = nids.processDetectionRules(triggerPacket, updatedPackets);
         
         if (ruleResult.triggered) {
           const currentAlerts = JSON.parse(localStorage.getItem('nids_alerts') || '[]');
           
-          // Check if this type of alert from this IP was already triggered in the last 5 seconds to avoid duplicate spam
-          const fiveSecAgo = new Date(new Date().getTime() - 5000);
+          // Check if this type of alert from this IP was already triggered in the last 6 seconds
+          const sixSecAgo = new Date(new Date().getTime() - 6000);
           const duplicate = currentAlerts.find(a => 
-            a.src_ip === newPacket.src_ip && 
+            a.src_ip === triggerPacket.src_ip && 
             a.attack_type === ruleResult.attack_type && 
-            new Date(a.timestamp) >= fiveSecAgo
+            new Date(a.timestamp) >= sixSecAgo
           );
 
           if (!duplicate) {
@@ -102,8 +121,8 @@ function App() {
             const newAlert = {
               id: nextId,
               timestamp: new Date().toISOString(),
-              src_ip: newPacket.src_ip,
-              dst_ip: newPacket.dst_ip,
+              src_ip: triggerPacket.src_ip,
+              dst_ip: triggerPacket.dst_ip,
               attack_type: ruleResult.attack_type,
               severity: ruleResult.severity,
               confidence: ruleResult.confidence,
@@ -114,20 +133,7 @@ function App() {
             localStorage.setItem('nids_alerts', JSON.stringify(updatedAlerts));
             setAlerts(updatedAlerts.filter(a => a.status !== 'Deleted'));
             
-            showNotification(`[ALERT] ${ruleResult.attack_type} detected from ${newPacket.src_ip}!`, 'danger');
-
-            // Trigger malicious packets burst to populate charts/logs
-            setTimeout(() => {
-              const burstPackets = [];
-              for (let i = 0; i < 5; i++) {
-                const p = nids.generateSimulatedPacket(ruleResult.attack_type);
-                p.src_ip = newPacket.src_ip;
-                burstPackets.push(p);
-              }
-              const latestPackets = [...burstPackets, ...updatedPackets].slice(0, 200);
-              localStorage.setItem('nids_packets', JSON.stringify(latestPackets));
-              setPackets(latestPackets);
-            }, 200);
+            showNotification(`[ALERT] ${ruleResult.attack_type} detected from ${triggerPacket.src_ip}!`, 'danger');
           }
         }
       }, 1200);
