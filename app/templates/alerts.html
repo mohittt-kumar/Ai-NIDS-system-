@@ -41,6 +41,7 @@
             <!-- Filter Action Buttons -->
             <div class="col-md-4 text-md-end d-flex gap-2 align-self-end justify-content-md-end">
                 <button id="filter-reset-btn" class="btn btn-outline-secondary"><i class="fa-solid fa-rotate-left me-1"></i>Reset</button>
+                <button id="clear-all-alerts-btn" class="btn btn-outline-danger"><i class="fa-solid fa-trash-can me-1"></i>Clear All</button>
                 <button id="alerts-export-csv" class="btn btn-cyber-outline"><i class="fa-solid fa-file-csv me-1"></i>Export CSV</button>
             </div>
         </div>
@@ -247,6 +248,29 @@ document.addEventListener('DOMContentLoaded', () => {
         statusSelect.value = 'All';
         loadAlerts(1);
     });
+
+    // Wire up Clear All Logs button listener in Alert Center
+    const clearAllBtn = document.getElementById('clear-all-alerts-btn');
+    if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', () => {
+            if (confirm("Are you sure you want to permanently delete all network alerts, packet logs, and threat actor profiles? This resets all dashboard metrics to zero.")) {
+                fetch('/api/alert/clear', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification("All database logs and alerts cleared successfully.", "warning");
+                            loadAlerts(1);
+                        } else {
+                            showNotification("Action failed: " + data.error, "danger");
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Error clearing logs: ", err);
+                        showNotification("An error occurred while clearing logs.", "danger");
+                    });
+            }
+        });
+    }
 
     // Export CSV trigger
     exportCsvBtn.addEventListener('click', () => {

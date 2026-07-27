@@ -154,7 +154,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById(f).value = defaults[f];
             });
             
-            showNotification("Defaults loaded to form. Press Apply to save.", "info");
+            fetch('/api/admin/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(defaults)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification("Rules reset to factory default settings persistently.", "success");
+                    loadSettings();
+                } else {
+                    showNotification("Failed to save default settings: " + data.error, "danger");
+                }
+            })
+            .catch(err => {
+                showNotification("Communication error resetting thresholds.", "danger");
+                console.error(err);
+            });
         }
     });
 
