@@ -251,6 +251,11 @@ function App() {
                   </button>
                 </li>
               )}
+              <li className="nav-item ms-lg-auto">
+                <button className="nav-link border-0 bg-transparent d-flex align-items-center text-danger fw-bold" onClick={handleLogout}>
+                  <i className="fa-solid fa-right-from-bracket me-2"></i>Sign Out
+                </button>
+              </li>
             </ul>
             
             {/* Toggle controls and profile pic */}
@@ -324,7 +329,7 @@ function App() {
         {activeTab === 'threats' && <AIEngineView />}
         {activeTab === 'alerts' && <AlertsView alerts={alerts} setAlerts={setAlerts} onClearLogs={handleClearLogs} showNotification={showNotification} />}
         {activeTab === 'settings' && <SettingsView thresholds={thresholds} setThresholds={setThresholds} showNotification={showNotification} />}
-        {activeTab === 'profile' && <ProfileView activeUser={activeUser} setActiveUser={setActiveUser} showNotification={showNotification} />}
+        {activeTab === 'profile' && <ProfileView activeUser={activeUser} setActiveUser={setActiveUser} showNotification={showNotification} onLogout={handleLogout} />}
         {activeTab === 'knowledge' && <AttackKnowledgeView />}
         {activeTab === 'admin' && <AdminView showNotification={showNotification} />}
       </div>
@@ -1157,7 +1162,7 @@ function SettingsView({ thresholds, setThresholds, showNotification }) {
 // ----------------------------------------------------
 // 7. PROFILE VIEW
 // ----------------------------------------------------
-function ProfileView({ activeUser, setActiveUser, showNotification }) {
+function ProfileView({ activeUser, setActiveUser, showNotification, onLogout }) {
   const [email, setEmail] = useState(activeUser.email);
   const [password, setPassword] = useState('');
 
@@ -1188,7 +1193,11 @@ function ProfileView({ activeUser, setActiveUser, showNotification }) {
             alt="Avatar" width="120" height="120" className="rounded-circle border border-primary mb-3 bg-light p-2" 
           />
           <h4 className="fw-bold mb-1">{activeUser.username}</h4>
-          <span className="badge bg-primary-subtle text-primary border px-3 py-1 text-uppercase">{activeUser.role}</span>
+          <span className="badge bg-primary-subtle text-primary border px-3 py-1 text-uppercase mb-4">{activeUser.role}</span>
+          
+          <button type="button" onClick={onLogout} className="btn btn-outline-danger w-100 py-2 fw-bold mt-2">
+            <i className="fa-solid fa-right-from-bracket me-2"></i>Sign Out Console
+          </button>
         </div>
         <div className="col-md-8 px-md-4 py-3">
           <form onSubmit={handleSubmit}>
