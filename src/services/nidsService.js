@@ -63,7 +63,7 @@ const generatePreseededData = () => {
             src_ip = attackerIps[Math.floor(Math.random() * attackerIps.length)];
             protocol = 'TCP';
             dst_port = [22, 3389, 21][Math.floor(Math.random() * 3)];
-            _attack_type = ['Port Scan', 'SYN Flood', 'Brute Force', 'Ping Flood'][Math.floor(Math.random() * 4)];
+            _attack_type = ['Port Scanning', 'SYN Flood', 'Brute Force', 'Ping Flood'][Math.floor(Math.random() * 4)];
         }
         
         packets.push({
@@ -80,7 +80,7 @@ const generatePreseededData = () => {
         
         // Seed some corresponding alerts
         if (isMalicious && i !== 0) {
-            const severities = { 'Port Scan': 'High', 'SYN Flood': 'Critical', 'Brute Force': 'High', 'Ping Flood': 'Medium' };
+            const severities = { 'Port Scanning': 'High', 'SYN Flood': 'Critical', 'Brute Force': 'High', 'Ping Flood': 'Medium' };
             
             alerts.push({
                 id: alerts.length + 1,
@@ -202,7 +202,7 @@ export const predictPacket = (features) => {
         attack_type = 'DDoS';
         confidence = 0.97 + (srcPort % 3) * 0.01;
     } else if (dstPort > 1024 && packetsRate > 40 && fwdPackets > 15) {
-        attack_type = 'Port Scan';
+        attack_type = 'Port Scanning';
         confidence = 0.95 + (srcPort % 4) * 0.01;
     } else if (dstPort === 80 || dstPort === 443) {
         const fwdLen = parseInt(features.Total_Length_of_Fwd_Packets !== undefined ? features.Total_Length_of_Fwd_Packets : features.size || 0);
@@ -245,10 +245,10 @@ export const generateSimulatedPacket = (specificType = null) => {
     
     if (type === 'Attack') {
         src_ip = attackerIps[Math.floor(Math.random() * attackerIps.length)];
-        const attackPatterns = ['Port Scan', 'SYN Flood', 'Ping Flood', 'Brute Force', 'Web Attack'];
+        const attackPatterns = ['Port Scanning', 'SYN Flood', 'Ping Flood', 'Brute Force', 'Web Attack'];
         attackPattern = specificType || attackPatterns[Math.floor(Math.random() * attackPatterns.length)];
         
-        if (attackPattern === 'Port Scan') {
+        if (attackPattern === 'Port Scanning') {
             dst_port = Math.floor(Math.random() * 1000) + 1; // Random scan port
             protocol = 'TCP';
             flags = 'S';
@@ -305,7 +305,7 @@ export const processDetectionRules = (packet, packetsHistory) => {
     if (uniquePorts.size >= thresholds.PORT_SCAN_COUNT && packet.protocol === 'TCP') {
         return {
             triggered: true,
-            attack_type: 'Port Scan',
+            attack_type: 'Port Scanning',
             severity: 'High',
             confidence: 0.95
         };

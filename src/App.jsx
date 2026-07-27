@@ -88,7 +88,7 @@ function App() {
       let newPackets = [];
 
       if (isAttack) {
-        const patterns = ['Port Scan', 'SYN Flood', 'Ping Flood', 'Brute Force', 'Web Attack'];
+        const patterns = ['Port Scanning', 'SYN Flood', 'Ping Flood', 'Brute Force', 'Web Attack'];
         const pattern = patterns[Math.floor(Math.random() * patterns.length)];
         const attackerIp = ['185.220.101.5', '45.133.1.20', '198.51.100.42'][Math.floor(Math.random() * 3)];
         
@@ -857,7 +857,7 @@ function AIEngineView() {
                     {result.attack_type === 'Ping Flood' && '-> Flow_Packets_s > 10.00 -> Protocol == ICMP -> Attack Category: Ping Flood'}
                     {result.attack_type === 'Brute Force' && '-> Flow_Packets_s > 8.00 -> Dst_Port == 22 -> Protocol == TCP -> Attack Category: Brute Force'}
                     {result.attack_type === 'DoS' && '-> Flow_Packets_s > 100.00 -> Attack Category: DoS'}
-                    {result.attack_type === 'Port Scan' && '-> Flow_Packets_s > 40.00 -> Dst_Port > 1024 -> Attack Category: Port Scan'}
+                    {result.attack_type === 'Port Scanning' && '-> Flow_Packets_s > 40.00 -> Dst_Port > 1024 -> Attack Category: Port Scanning'}
                     {result.attack_type === 'Web Attack' && '-> Dst_Port == 80 -> Fwd_Length > 1000 -> Attack Category: Web Attack'}
                   </div>
                 </div>
