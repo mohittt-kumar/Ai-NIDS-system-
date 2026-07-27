@@ -69,80 +69,78 @@ function App() {
     toastTimeoutRef.current = setTimeout(() => setToast(null), 6000);
   };
 
-  // Sniffing background simulation loop
+  // Sniffing background simulation loop (Standard, leak-proof interval hook)
   useEffect(() => {
-    if (monitoringActive) {
-      // Loop that simulates packet arrivals every 1200ms
-      captureTimerRef.current = setInterval(() => {
-        const isAttack = Math.random() > 0.82; // 18% chance of attack burst on each tick
-        let newPackets = [];
+    if (!monitoringActive) return;
 
-        if (isAttack) {
-          const patterns = ['Port Scan', 'SYN Flood', 'Ping Flood', 'Brute Force', 'Web Attack'];
-          const pattern = patterns[Math.floor(Math.random() * patterns.length)];
-          const attackerIp = ['185.220.101.5', '45.133.1.20', '198.51.100.42'][Math.floor(Math.random() * 3)];
-          
-          // Generate a burst of 18-25 packets spanning a short duration
-          const burstSize = 18 + Math.floor(Math.random() * 8);
-          const now = new Date();
-          for (let i = 0; i < burstSize; i++) {
-            const p = nids.generateSimulatedPacket(pattern);
-            p.src_ip = attackerIp;
-            p.timestamp = new Date(now.getTime() - i * 35).toISOString(); // Offset slightly
-            newPackets.push(p);
-          }
-        } else {
-          newPackets.push(nids.generateSimulatedPacket('Normal'));
-        }
+    // Loop that simulates packet arrivals every 1200ms
+    const intervalId = setInterval(() => {
+      const isAttack = Math.random() > 0.82; // 18% chance of attack burst on each tick
+      let newPackets = [];
 
-        // Load latest state histories
-        const currentPackets = JSON.parse(localStorage.getItem('nids_packets') || '[]');
-        const updatedPackets = [...newPackets, ...currentPackets].slice(0, 200);
-        localStorage.setItem('nids_packets', JSON.stringify(updatedPackets));
-        setPackets(updatedPackets);
-
-        // Evaluate heuristic rules for the first packet in the list (the trigger)
-        const triggerPacket = newPackets[0];
-        const ruleResult = nids.processDetectionRules(triggerPacket, updatedPackets);
+      if (isAttack) {
+        const patterns = ['Port Scan', 'SYN Flood', 'Ping Flood', 'Brute Force', 'Web Attack'];
+        const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+        const attackerIp = ['185.220.101.5', '45.133.1.20', '198.51.100.42'][Math.floor(Math.random() * 3)];
         
-        if (ruleResult.triggered) {
-          const currentAlerts = JSON.parse(localStorage.getItem('nids_alerts') || '[]');
-          
-          // Check if this type of alert from this IP was already triggered in the last 6 seconds
-          const sixSecAgo = new Date(new Date().getTime() - 6000);
-          const duplicate = currentAlerts.find(a => 
-            a.src_ip === triggerPacket.src_ip && 
-            a.attack_type === ruleResult.attack_type && 
-            new Date(a.timestamp) >= sixSecAgo
-          );
-
-          if (!duplicate) {
-            const nextId = currentAlerts.length > 0 ? Math.max(...currentAlerts.map(a => a.id)) + 1 : 1;
-            const newAlert = {
-              id: nextId,
-              timestamp: new Date().toISOString(),
-              src_ip: triggerPacket.src_ip,
-              dst_ip: triggerPacket.dst_ip,
-              attack_type: ruleResult.attack_type,
-              severity: ruleResult.severity,
-              confidence: ruleResult.confidence,
-              status: 'Active'
-            };
-
-            const updatedAlerts = [newAlert, ...currentAlerts];
-            localStorage.setItem('nids_alerts', JSON.stringify(updatedAlerts));
-            setAlerts(updatedAlerts.filter(a => a.status !== 'Deleted'));
-            
-            showNotification(`[ALERT] ${ruleResult.attack_type} detected from ${triggerPacket.src_ip}!`, 'danger');
-          }
+        // Generate a burst of 18-25 packets spanning a short duration
+        const burstSize = 18 + Math.floor(Math.random() * 8);
+        const now = new Date();
+        for (let i = 0; i < burstSize; i++) {
+          const p = nids.generateSimulatedPacket(pattern);
+          p.src_ip = attackerIp;
+          p.timestamp = new Date(now.getTime() - i * 35).toISOString(); // Offset slightly
+          newPackets.push(p);
         }
-      }, 1200);
-    } else {
-      if (captureTimerRef.current) clearInterval(captureTimerRef.current);
-    }
+      } else {
+        newPackets.push(nids.generateSimulatedPacket('Normal'));
+      }
+
+      // Load latest state histories
+      const currentPackets = JSON.parse(localStorage.getItem('nids_packets') || '[]');
+      const updatedPackets = [...newPackets, ...currentPackets].slice(0, 200);
+      localStorage.setItem('nids_packets', JSON.stringify(updatedPackets));
+      setPackets(updatedPackets);
+
+      // Evaluate heuristic rules for the first packet in the list (the trigger)
+      const triggerPacket = newPackets[0];
+      const ruleResult = nids.processDetectionRules(triggerPacket, updatedPackets);
+      
+      if (ruleResult.triggered) {
+        const currentAlerts = JSON.parse(localStorage.getItem('nids_alerts') || '[]');
+        
+        // Check if this type of alert from this IP was already triggered in the last 6 seconds
+        const sixSecAgo = new Date(new Date().getTime() - 6000);
+        const duplicate = currentAlerts.find(a => 
+          a.src_ip === triggerPacket.src_ip && 
+          a.attack_type === ruleResult.attack_type && 
+          new Date(a.timestamp) >= sixSecAgo
+        );
+
+        if (!duplicate) {
+          const nextId = currentAlerts.length > 0 ? Math.max(...currentAlerts.map(a => a.id)) + 1 : 1;
+          const newAlert = {
+            id: nextId,
+            timestamp: new Date().toISOString(),
+            src_ip: triggerPacket.src_ip,
+            dst_ip: triggerPacket.dst_ip,
+            attack_type: ruleResult.attack_type,
+            severity: ruleResult.severity,
+            confidence: ruleResult.confidence,
+            status: 'Active'
+          };
+
+          const updatedAlerts = [newAlert, ...currentAlerts];
+          localStorage.setItem('nids_alerts', JSON.stringify(updatedAlerts));
+          setAlerts(updatedAlerts.filter(a => a.status !== 'Deleted'));
+          
+          showNotification(`[ALERT] ${ruleResult.attack_type} detected from ${triggerPacket.src_ip}!`, 'danger');
+        }
+      }
+    }, 1200);
 
     return () => {
-      if (captureTimerRef.current) clearInterval(captureTimerRef.current);
+      clearInterval(intervalId);
     };
   }, [monitoringActive]);
 
