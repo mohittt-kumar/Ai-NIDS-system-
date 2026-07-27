@@ -4,11 +4,25 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'security-operations-center-nids-key-987654'
-    if os.environ.get('VERCEL') == '1':
-        SQLALCHEMY_DATABASE_URI = 'sqlite:////tmp/nids.db'
+    # Test if local instance folder is writable; if not (like Vercel), use /tmp
+    _db_dir = os.path.join(basedir, 'instance')
+    _db_path = os.path.join(_db_dir, 'nids.db')
+    _is_writable = False
+    try:
+        if not os.path.exists(_db_dir):
+            os.makedirs(_db_dir, exist_ok=True)
+        _test_file = os.path.join(_db_dir, '.write_test')
+        with open(_test_file, 'w') as _f:
+            _f.write('test')
+        os.remove(_test_file)
+        _is_writable = True
+    except Exception:
+        _is_writable = False
+
+    if _is_writable and os.environ.get('VERCEL') != '1':
+        SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///' + _db_path
     else:
-        SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-            'sqlite:///' + os.path.join(basedir, 'instance', 'nids.db')
+        SQLALCHEMY_DATABASE_URI = 'sqlite:////tmp/nids.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Path mappings
