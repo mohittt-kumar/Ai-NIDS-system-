@@ -88,7 +88,12 @@ function App() {
       let newPackets = [];
 
       if (isAttack) {
-        const patterns = ['Port Scanning', 'SYN Flood', 'Ping Flood', 'Brute Force', 'Web Attack'];
+        const patterns = [
+          'Port Scanning', 'SYN Flood', 'Ping Flood', 'Brute Force', 
+          'SQL Injection', 'Cross-Site Scripting', 'ARP Poisoning', 
+          'DNS Spoofing', 'MITM Redirect', 'Botnet C2 Callout', 
+          'Smurf Attack', 'Buffer Overflow', 'DoS'
+        ];
         const pattern = patterns[Math.floor(Math.random() * patterns.length)];
         const attackerIp = ['185.220.101.5', '45.133.1.20', '198.51.100.42'][Math.floor(Math.random() * 3)];
         
@@ -856,9 +861,18 @@ function AIEngineView() {
                     {result.attack_type === 'SYN Flood' && '-> Flow_Packets_s > 15.00 -> Protocol == TCP -> Flags == S -> Attack Category: SYN Flood'}
                     {result.attack_type === 'Ping Flood' && '-> Flow_Packets_s > 10.00 -> Protocol == ICMP -> Attack Category: Ping Flood'}
                     {result.attack_type === 'Brute Force' && '-> Flow_Packets_s > 8.00 -> Dst_Port == 22 -> Protocol == TCP -> Attack Category: Brute Force'}
+                    {result.attack_type === 'SQL Injection' && '-> Dst_Port == 80 -> Fwd_Length == 950 -> Attack Category: SQL Injection'}
+                    {result.attack_type === 'Cross-Site Scripting' && '-> Dst_Port == 80 -> Fwd_Length == 880 -> Attack Category: Cross-Site Scripting'}
+                    {result.attack_type === 'ARP Poisoning' && '-> Protocol == ARP -> Attack Category: ARP Poisoning'}
+                    {result.attack_type === 'DNS Spoofing' && '-> Dst_Port == 53 -> Flow_Packets_s > 15.00 -> Attack Category: DNS Spoofing'}
+                    {result.attack_type === 'MITM Redirect' && '-> Dst_Port == 80 -> Flags == FA -> Fwd_Length == 120 -> Attack Category: MITM Redirect'}
+                    {result.attack_type === 'Botnet C2 Callout' && '-> Dst_Port == 6667 -> Fwd_Length == 450 -> Attack Category: Botnet C2 Callout'}
+                    {result.attack_type === 'Smurf Attack' && '-> Protocol == ICMP -> Dst_Port == 0 -> Fwd_Length >= 1400 -> Attack Category: Smurf Attack'}
+                    {result.attack_type === 'Buffer Overflow' && '-> Dst_Port == 445 -> Fwd_Length >= 1450 -> Attack Category: Buffer Overflow'}
                     {result.attack_type === 'DoS' && '-> Flow_Packets_s > 100.00 -> Attack Category: DoS'}
+                    {result.attack_type === 'DDoS' && '-> Flow_Duration > 5000 -> Flow_Bytes_s > 50000 -> Attack Category: DDoS'}
                     {result.attack_type === 'Port Scanning' && '-> Flow_Packets_s > 40.00 -> Dst_Port > 1024 -> Attack Category: Port Scanning'}
-                    {result.attack_type === 'Web Attack' && '-> Dst_Port == 80 -> Fwd_Length > 1000 -> Attack Category: Web Attack'}
+                    {result.attack_type === 'Web Attack' && '-> Dst_Port == 80 -> Fwd_Length > 1100 -> Attack Category: Web Attack'}
                   </div>
                 </div>
               </div>
