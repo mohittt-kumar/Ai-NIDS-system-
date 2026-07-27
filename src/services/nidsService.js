@@ -231,7 +231,8 @@ export const generateSimulatedPacket = (specificType = null) => {
     const commonIps = ['192.168.1.50', '192.168.1.100', '10.0.0.15', '10.0.0.22', '8.8.8.8', '1.1.1.1'];
     const attackerIps = ['185.220.101.5', '45.133.1.20', '198.51.100.42'];
     
-    const type = specificType || (Math.random() > 0.82 ? 'Attack' : 'Normal');
+    const isAttack = specificType !== null && specificType !== 'Normal';
+    const type = isAttack ? 'Attack' : (Math.random() > 0.82 ? 'Attack' : 'Normal');
     
     let src_ip = commonIps[Math.floor(Math.random() * commonIps.length)];
     let dst_ip = '192.168.1.10'; // Our protected asset
