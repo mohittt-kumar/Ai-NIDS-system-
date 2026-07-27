@@ -76,3 +76,23 @@ def delete_alert(alert_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@alert_bp.route('/clear', methods=['POST'])
+@login_required
+def clear_all_alerts():
+    from app.models.packet import Packet
+    from app.models.threat import Threat
+    from app.models.prediction import AIPrediction
+    try:
+        # Clear all packet, alert, threat, and AI prediction records
+        AIPrediction.query.delete()
+        Alert.query.delete()
+        Threat.query.delete()
+        Packet.query.delete()
+        db.session.commit()
+        log_event('Alert', 'INFO', "All intrusion logs and metrics cleared by user.")
+        return jsonify({'success': True, 'message': 'All network logs and alerts cleared successfully.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+

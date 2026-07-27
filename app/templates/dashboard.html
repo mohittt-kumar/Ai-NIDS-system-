@@ -144,7 +144,10 @@
             <div class="card-cyber p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="mb-0 text-white"><i class="fa-solid fa-shield-cat me-2 text-info"></i>Recent Security Activity log</h5>
-                    <a href="{{ url_for('views.alerts') }}" class="btn btn-sm btn-cyber"><i class="fa-solid fa-magnifying-glass-chart me-1"></i>Open Alert Center</a>
+                    <div class="d-flex gap-2">
+                        <button id="clear-all-alerts-btn" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash-can me-1"></i>Clear All Logs</button>
+                        <a href="{{ url_for('views.alerts') }}" class="btn btn-sm btn-cyber"><i class="fa-solid fa-magnifying-glass-chart me-1"></i>Open Alert Center</a>
+                    </div>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-dark table-hover border-secondary mb-0 align-middle">

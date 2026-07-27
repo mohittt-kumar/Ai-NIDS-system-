@@ -331,6 +331,29 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(fetchDashboardData, 1000);
     };
 
+    // Wire up Clear All Logs button listener
+    const clearAllBtn = document.getElementById('clear-all-alerts-btn');
+    if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', () => {
+            if (confirm("Are you sure you want to permanently delete all network alerts, packet logs, and threat actor profiles? This resets all dashboard charts to zero.")) {
+                fetch('/api/alert/clear', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification("All database logs and alerts cleared successfully.", "warning");
+                            fetchDashboardData();
+                        } else {
+                            showNotification("Action failed: " + data.error, "danger");
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Error clearing logs: ", err);
+                        showNotification("An error occurred while clearing logs.", "danger");
+                    });
+            }
+        });
+    }
+
     // Initialize fetches
     fetchDashboardData();
     setInterval(fetchDashboardData, 4000); // Poll dashboard every 4 seconds
