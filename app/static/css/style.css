@@ -298,6 +298,10 @@ code {
     transition: var(--transition);
     border-radius: 6px;
     padding: 8px 12px !important;
+    white-space: nowrap !important;
+}
+#sidebar-status-text, #sidebar-mode-text {
+    white-space: nowrap !important;
 }
 .navbar-nav .nav-link:hover {
     background-color: #f1f5f9;
