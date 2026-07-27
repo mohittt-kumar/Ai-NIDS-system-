@@ -16,11 +16,15 @@ def create_app(config_class=Config):
     db.init_app(app)
     login_manager.init_app(app)
     
-    # Ensure directories exist
-    os.makedirs(app.instance_path, exist_ok=True)
-    os.makedirs(os.path.join(os.path.dirname(app.root_path), 'trained_model'), exist_ok=True)
-    os.makedirs(os.path.join(os.path.dirname(app.root_path), 'dataset'), exist_ok=True)
-    os.makedirs(os.path.join(app.root_path, 'static', 'images', 'profiles'), exist_ok=True)
+    # Ensure directories exist (skipped on Vercel's read-only filesystem)
+    try:
+        if os.environ.get('VERCEL') != '1':
+            os.makedirs(app.instance_path, exist_ok=True)
+            os.makedirs(os.path.join(os.path.dirname(app.root_path), 'trained_model'), exist_ok=True)
+            os.makedirs(os.path.join(os.path.dirname(app.root_path), 'dataset'), exist_ok=True)
+            os.makedirs(os.path.join(app.root_path, 'static', 'images', 'profiles'), exist_ok=True)
+    except Exception as e:
+        print(f"Directory creation warning: {e}")
     
     # Import routes
     from app.routes.auth import auth_bp
