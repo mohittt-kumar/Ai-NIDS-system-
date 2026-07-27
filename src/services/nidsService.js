@@ -22,15 +22,79 @@ export const initDatabase = () => {
     if (!localStorage.getItem('nids_settings')) {
         localStorage.setItem('nids_settings', JSON.stringify(DEFAULT_THRESHOLDS));
     }
-    if (!localStorage.getItem('nids_packets')) {
-        localStorage.setItem('nids_packets', JSON.stringify([]));
+    
+    // Check if logs are empty; if so, pre-seed them with historical data
+    if (!localStorage.getItem('nids_packets') || JSON.parse(localStorage.getItem('nids_packets') || '[]').length === 0) {
+        const preseeded = generatePreseededData();
+        localStorage.setItem('nids_packets', JSON.stringify(preseeded.packets));
+        localStorage.setItem('nids_alerts', JSON.stringify(preseeded.alerts));
+    } else {
+        if (!localStorage.getItem('nids_packets')) {
+            localStorage.setItem('nids_packets', JSON.stringify([]));
+        }
+        if (!localStorage.getItem('nids_alerts')) {
+            localStorage.setItem('nids_alerts', JSON.stringify([]));
+        }
     }
-    if (!localStorage.getItem('nids_alerts')) {
-        localStorage.setItem('nids_alerts', JSON.stringify([]));
-    }
+    
     if (!localStorage.getItem('nids_active_user')) {
         localStorage.setItem('nids_active_user', null);
     }
+};
+
+const generatePreseededData = () => {
+    const packets = [];
+    const alerts = [];
+    const attackerIps = ['185.220.101.5', '45.133.1.20', '198.51.100.42'];
+    const protocols = ['TCP', 'UDP', 'ICMP'];
+    
+    // Seed 50 packets spanning the last hour
+    const now = new Date();
+    for (let i = 50; i >= 0; i--) {
+        const timeOffset = new Date(now.getTime() - i * 60 * 1000); // i minutes ago
+        const isMalicious = i % 12 === 0;
+        
+        let src_ip = '192.168.1.' + (Math.floor(Math.random() * 80) + 50);
+        let dst_port = [80, 443, 53, 22][Math.floor(Math.random() * 4)];
+        let protocol = protocols[Math.floor(Math.random() * 3)];
+        
+        if (isMalicious) {
+            src_ip = attackerIps[Math.floor(Math.random() * attackerIps.length)];
+            protocol = 'TCP';
+            dst_port = 22; // Brute force or scanning port
+        }
+        
+        packets.push({
+            timestamp: timeOffset.toISOString(),
+            src_ip,
+            dst_ip: '192.168.1.10',
+            protocol,
+            src_port: Math.floor(Math.random() * 50000) + 1000,
+            dst_port,
+            size: Math.floor(Math.random() * 1000) + 64,
+            flags: isMalicious ? 'S' : 'PA'
+        });
+        
+        // Seed some corresponding alerts
+        if (isMalicious && i !== 0) {
+            const attackTypes = ['Port Scan', 'SYN Flood', 'Brute Force', 'Ping Flood'];
+            const attack_type = attackTypes[Math.floor(Math.random() * 4)];
+            const severities = { 'Port Scan': 'High', 'SYN Flood': 'Critical', 'Brute Force': 'High', 'Ping Flood': 'Medium' };
+            
+            alerts.push({
+                id: alerts.length + 1,
+                timestamp: timeOffset.toISOString(),
+                src_ip,
+                dst_ip: '192.168.1.10',
+                attack_type,
+                severity: severities[attack_type],
+                confidence: parseFloat((0.9 + Math.random() * 0.08).toFixed(2)),
+                status: Math.random() > 0.4 ? 'Resolved' : 'Active'
+            });
+        }
+    }
+    
+    return { packets, alerts };
 };
 
 // Database Methods

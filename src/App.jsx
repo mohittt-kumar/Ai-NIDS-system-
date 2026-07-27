@@ -438,16 +438,29 @@ function DashboardView({ packets, alerts, onClearLogs, onNavigate }) {
   }, {});
   const sortedIps = Object.entries(ipCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
+  // Group alerts by minute for the timeline chart (last 6 minutes)
+  const timelineLabels = [];
+  const timelineCounts = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - i);
+    const label = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    timelineLabels.push(label);
+    
+    // Count alerts that occurred in this minute
+    const count = alerts.filter(a => {
+      const alertTime = new Date(a.timestamp);
+      return alertTime.getHours() === d.getHours() && alertTime.getMinutes() === d.getMinutes();
+    }).length;
+    timelineCounts.push(count);
+  }
+
   // Charts Configs
   const timelineData = {
-    labels: Array.from({ length: 6 }, (_, i) => {
-      const d = new Date();
-      d.setMinutes(d.getMinutes() - (5 - i));
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }),
+    labels: timelineLabels,
     datasets: [{
       label: 'Triggered Threats',
-      data: Array.from({ length: 5 }, () => Math.floor(Math.random() * 4)).concat([alerts.length % 5]),
+      data: timelineCounts,
       borderColor: '#0284c7',
       backgroundColor: 'rgba(2, 132, 199, 0.1)',
       borderWidth: 2,
