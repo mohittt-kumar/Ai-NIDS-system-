@@ -57,11 +57,13 @@ const generatePreseededData = () => {
         let src_ip = '192.168.1.' + (Math.floor(Math.random() * 80) + 50);
         let dst_port = [80, 443, 53, 22][Math.floor(Math.random() * 4)];
         let protocol = protocols[Math.floor(Math.random() * 3)];
+        let _attack_type = 'Normal';
         
         if (isMalicious) {
             src_ip = attackerIps[Math.floor(Math.random() * attackerIps.length)];
             protocol = 'TCP';
-            dst_port = 22; // Brute force or scanning port
+            dst_port = [22, 3389, 21][Math.floor(Math.random() * 3)];
+            _attack_type = ['Port Scan', 'SYN Flood', 'Brute Force', 'Ping Flood'][Math.floor(Math.random() * 4)];
         }
         
         packets.push({
@@ -72,13 +74,12 @@ const generatePreseededData = () => {
             src_port: Math.floor(Math.random() * 50000) + 1000,
             dst_port,
             size: Math.floor(Math.random() * 1000) + 64,
-            flags: isMalicious ? 'S' : 'PA'
+            flags: isMalicious ? 'S' : 'PA',
+            _attack_type
         });
         
         // Seed some corresponding alerts
         if (isMalicious && i !== 0) {
-            const attackTypes = ['Port Scan', 'SYN Flood', 'Brute Force', 'Ping Flood'];
-            const attack_type = attackTypes[Math.floor(Math.random() * 4)];
             const severities = { 'Port Scan': 'High', 'SYN Flood': 'Critical', 'Brute Force': 'High', 'Ping Flood': 'Medium' };
             
             alerts.push({
@@ -86,8 +87,8 @@ const generatePreseededData = () => {
                 timestamp: timeOffset.toISOString(),
                 src_ip,
                 dst_ip: '192.168.1.10',
-                attack_type,
-                severity: severities[attack_type],
+                attack_type: _attack_type,
+                severity: severities[_attack_type] || 'Medium',
                 confidence: parseFloat((0.9 + Math.random() * 0.08).toFixed(2)),
                 status: Math.random() > 0.4 ? 'Resolved' : 'Active'
             });
@@ -170,43 +171,50 @@ export const deleteAlert = (alertId) => {
 
 // ML Model prediction emulation
 export const predictPacket = (features) => {
-    const {
-        Source_Port, Destination_Port, Protocol, Flow_Duration,
-        Total_Fwd_Packets, Total_Backward_Packets, Total_Length_of_Fwd_Packets,
-        Fwd_Packet_Length_Max, Bwd_Packet_Length_Max, Flow_Bytes_s,
-        Flow_Packets_s
-    } = features;
+    // Normalization: fallback raw packet/db keys to uppercase ML dataset keys
+    const srcPort = parseInt(features.Source_Port !== undefined ? features.Source_Port : features.src_port || 0);
+    const dstPort = parseInt(features.Destination_Port !== undefined ? features.Destination_Port : features.dst_port || 0);
+    const proto = (features.Protocol !== undefined ? features.Protocol : features.protocol || '').toUpperCase();
+    const duration = parseFloat(features.Flow_Duration !== undefined ? features.Flow_Duration : 1000);
+    const fwdPackets = parseInt(features.Total_Fwd_Packets !== undefined ? features.Total_Fwd_Packets : 5);
+    const flowBytes = parseFloat(features.Flow_Bytes_s !== undefined ? features.Flow_Bytes_s : 1000);
+    
+    let packetsRate = parseFloat(features.Flow_Packets_s !== undefined ? features.Flow_Packets_s : 1.5);
+    if (features.flags === 'S' || proto === 'ICMP' || dstPort === 22 || dstPort === 3389) {
+        packetsRate = 25.0; // Boost rates to trigger classifications on logs
+    }
 
     // Simple Decision boundaries mirroring our Random Forest model logic
     let attack_type = 'Normal';
     let confidence = 0.99;
 
-    const dPort = parseInt(Destination_Port);
-    const sPort = parseInt(Source_Port);
-    const packetsRate = parseFloat(Flow_Packets_s);
-    const duration = parseFloat(Flow_Duration);
-
-    if (Protocol === 'ICMP' && packetsRate > 10) {
+    if (proto === 'ICMP' && packetsRate > 10) {
         attack_type = 'Ping Flood';
         confidence = 0.94 + Math.random() * 0.05;
-    } else if (Protocol === 'TCP' && (dPort === 22 || dPort === 21 || dPort === 3389) && packetsRate > 8) {
+    } else if (proto === 'TCP' && (dstPort === 22 || dstPort === 21 || dstPort === 3389) && packetsRate > 8) {
         attack_type = 'Brute Force';
         confidence = 0.96 + Math.random() * 0.03;
     } else if (packetsRate > 100) {
         attack_type = 'DoS';
         confidence = 0.98 + Math.random() * 0.01;
-    } else if (duration > 5000 && Total_Fwd_Packets > 30 && Flow_Bytes_s > 50000) {
+    } else if (duration > 5000 && fwdPackets > 30 && flowBytes > 50000) {
         attack_type = 'DDoS';
         confidence = 0.97 + Math.random() * 0.02;
-    } else if (dPort > 1024 && packetsRate > 40 && Total_Fwd_Packets > 15) {
+    } else if (dstPort > 1024 && packetsRate > 40 && fwdPackets > 15) {
         attack_type = 'Port Scan';
         confidence = 0.95 + Math.random() * 0.04;
-    } else if (dPort === 80 || dPort === 443) {
-        // Mock SQLi / XSS heuristic web attacks
-        if (Total_Length_of_Fwd_Packets > 1000 && Fwd_Packet_Length_Max > 500 && Math.random() > 0.7) {
+    } else if (dstPort === 80 || dstPort === 443) {
+        const fwdLen = parseInt(features.Total_Length_of_Fwd_Packets !== undefined ? features.Total_Length_of_Fwd_Packets : features.size || 0);
+        if (fwdLen > 1000 && Math.random() > 0.7) {
             attack_type = 'Web Attack';
             confidence = 0.92 + Math.random() * 0.06;
         }
+    }
+
+    // Preserve preset attack signatures from packet simulator
+    if (features._attack_type && features._attack_type !== 'Normal') {
+        attack_type = features._attack_type;
+        confidence = 0.95 + Math.random() * 0.04;
     }
 
     return {
@@ -222,7 +230,7 @@ export const generateSimulatedPacket = (specificType = null) => {
     const commonIps = ['192.168.1.50', '192.168.1.100', '10.0.0.15', '10.0.0.22', '8.8.8.8', '1.1.1.1'];
     const attackerIps = ['185.220.101.5', '45.133.1.20', '198.51.100.42'];
     
-    const type = specificType || (Math.random() > 0.85 ? 'Attack' : 'Normal');
+    const type = specificType || (Math.random() > 0.82 ? 'Attack' : 'Normal');
     
     let src_ip = commonIps[Math.floor(Math.random() * commonIps.length)];
     let dst_ip = '192.168.1.10'; // Our protected asset
@@ -231,33 +239,34 @@ export const generateSimulatedPacket = (specificType = null) => {
     let dst_port = [80, 443, 22, 53, 3389][Math.floor(Math.random() * 5)];
     let size = Math.floor(Math.random() * 1400) + 64;
     let flags = 'S';
+    let attackPattern = 'Normal';
     
     if (type === 'Attack') {
         src_ip = attackerIps[Math.floor(Math.random() * attackerIps.length)];
         const attackPatterns = ['Port Scan', 'SYN Flood', 'Ping Flood', 'Brute Force', 'Web Attack'];
-        const pattern = specificType || attackPatterns[Math.floor(Math.random() * attackPatterns.length)];
+        attackPattern = specificType || attackPatterns[Math.floor(Math.random() * attackPatterns.length)];
         
-        if (pattern === 'Port Scan') {
+        if (attackPattern === 'Port Scan') {
             dst_port = Math.floor(Math.random() * 1000) + 1; // Random scan port
             protocol = 'TCP';
             flags = 'S';
             size = 64;
-        } else if (pattern === 'SYN Flood') {
+        } else if (attackPattern === 'SYN Flood') {
             dst_port = 80;
             protocol = 'TCP';
             flags = 'S';
             size = 64;
-        } else if (pattern === 'Ping Flood') {
+        } else if (attackPattern === 'Ping Flood') {
             protocol = 'ICMP';
             dst_port = 0;
             flags = '';
             size = 1200;
-        } else if (pattern === 'Brute Force') {
+        } else if (attackPattern === 'Brute Force') {
             dst_port = [22, 3389, 21][Math.floor(Math.random() * 3)];
             protocol = 'TCP';
             flags = 'PA';
             size = 128;
-        } else if (pattern === 'Web Attack') {
+        } else if (attackPattern === 'Web Attack') {
             dst_port = 80;
             protocol = 'TCP';
             flags = 'PA';
@@ -273,7 +282,8 @@ export const generateSimulatedPacket = (specificType = null) => {
         src_port,
         dst_port,
         size,
-        flags
+        flags,
+        _attack_type: attackPattern
     };
 };
 
