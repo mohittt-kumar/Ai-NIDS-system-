@@ -239,6 +239,11 @@ function App() {
                   <i className="fa-solid fa-user-shield me-2"></i>Profile
                 </button>
               </li>
+              <li className="nav-item">
+                <button className={`nav-link border-0 bg-transparent d-flex align-items-center ${activeTab === 'knowledge' ? 'active' : ''}`} onClick={() => setActiveTab('knowledge')}>
+                  <i className="fa-solid fa-book-open me-2"></i>Attack Knowledge
+                </button>
+              </li>
               {activeUser.role === 'Admin' && (
                 <li className="nav-item">
                   <button className={`nav-link border-0 bg-transparent d-flex align-items-center ${activeTab === 'admin' ? 'active' : ''}`} onClick={() => setActiveTab('admin')}>
@@ -292,6 +297,7 @@ function App() {
               {activeTab === 'alerts' && 'Threat Registry & Mitigation Panel'}
               {activeTab === 'settings' && 'Rule Threshold Matrix Configurator'}
               {activeTab === 'profile' && 'Operator Security Clearance Credentials'}
+              {activeTab === 'knowledge' && 'Network Intrusion Attack Knowledge Base'}
               {activeTab === 'admin' && 'SOC Console Account Management'}
             </h2>
             <small className="text-muted">{clockStr}</small>
@@ -318,6 +324,7 @@ function App() {
         {activeTab === 'alerts' && <AlertsView alerts={alerts} setAlerts={setAlerts} onClearLogs={handleClearLogs} showNotification={showNotification} />}
         {activeTab === 'settings' && <SettingsView thresholds={thresholds} setThresholds={setThresholds} showNotification={showNotification} />}
         {activeTab === 'profile' && <ProfileView activeUser={activeUser} setActiveUser={setActiveUser} showNotification={showNotification} />}
+        {activeTab === 'knowledge' && <AttackKnowledgeView />}
         {activeTab === 'admin' && <AdminView showNotification={showNotification} />}
       </div>
 
@@ -1316,6 +1323,222 @@ function AdminView({ showNotification }) {
             </div>
             <button type="submit" className="btn btn-cyber w-100 py-2 fw-bold"><i className="fa-solid fa-user-plus me-2"></i>Provision Clearance</button>
           </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------
+// 9. ATTACK KNOWLEDGE VIEW
+// ----------------------------------------------------
+const ATTACK_DATABASE = [
+  {
+    id: 'port-scan',
+    name: 'Port Scanning',
+    icon: 'fa-magnifying-glass-location',
+    category: 'Reconnaissance',
+    severity: 'High',
+    description: 'Attackers probe range of ports on a target system to discover open access paths, running services, and vulnerable configurations.',
+    harmful_effects: 'Allows malicious actors to map the target network topology, locate specific operational server doors (like ports 22 SSH or 3389 RDP), and prepare a targeted payload delivery.',
+    prevention: 'Set up strict firewall ingress rules, employ port scan detection systems that block probing IPs automatically, hide unused ports, and use port-knocking protocols.'
+  },
+  {
+    id: 'syn-flood',
+    name: 'SYN Flood (DDoS)',
+    icon: 'fa-burst',
+    category: 'Denial of Service',
+    severity: 'Critical',
+    description: 'An attacker rapidly sends TCP connection requests (SYN) without completing the three-way handshake, exhausting the target server\'s connection queue buffer.',
+    harmful_effects: 'Prevents legitimate users from connecting to the server, resulting in total server crash, application timeouts, and service outages.',
+    prevention: 'Deploy SYN cookies, configure shorter handshake connection timeouts, use hardware rate-limiting firewalls, and route ingress through DDoS scrubbing centers.'
+  },
+  {
+    id: 'ping-flood',
+    name: 'Ping Flood (ICMP)',
+    icon: 'fa-wave-square',
+    category: 'Denial of Service',
+    severity: 'Medium',
+    description: 'An attacker inundates a target system with ICMP Echo Request (ping) packets to saturate public and local network bandwidth.',
+    harmful_effects: 'Causes high packet latency, network interface saturation, extreme database latency, and makes web services sluggish or completely unresponsive.',
+    prevention: 'Decline ICMP ping requests on gateway firewalls, enforce packet rate thresholds, and implement network access control lists (ACLs) to drop suspicious ICMP logs.'
+  },
+  {
+    id: 'brute-force',
+    name: 'Brute Force',
+    icon: 'fa-key',
+    category: 'Credential Access',
+    severity: 'High',
+    description: 'Automated trial-and-error scripts systematically test thousands of usernames and passwords against management gateways (SSH 22, FTP 21, RDP 3389).',
+    harmful_effects: 'Direct unauthorized network penetration, database exposure, remote shell command executions, and installation of administrative backdoors.',
+    prevention: 'Mandate robust password complexity, enforce multi-factor authentication (MFA), implement account lockouts via Fail2ban, and modify default service ports.'
+  },
+  {
+    id: 'sqli',
+    name: 'SQL Injection (SQLi)',
+    icon: 'fa-database',
+    category: 'Application Exploit',
+    severity: 'High',
+    description: 'Malicious SQL statements are inserted into dynamic database query input fields, executing unauthorized backend database instructions.',
+    harmful_effects: 'Leaking database records (exfiltrating customer credentials and financial details), bypasses admin login verification, and alters database data.',
+    prevention: 'Use parameterized queries (prepared statements), enforce strict input validations, follow database least privilege principles, and use Web Application Firewalls (WAF).'
+  },
+  {
+    id: 'xss',
+    name: 'Cross-Site Scripting (XSS)',
+    icon: 'fa-code',
+    category: 'Application Exploit',
+    severity: 'High',
+    description: 'An attacker injects malicious client-side scripts (HTML/JavaScript) into trusted websites, which are then served and executed by other visitors\' browsers.',
+    harmful_effects: 'Stealing active session cookies, capturing login credentials via keystroke logging, hijacking user accounts, and defacing web page assets.',
+    prevention: 'Escape all user-submitted output variables, implement a strict Content Security Policy (CSP), use HttpOnly session cookies, and validate input queries.'
+  },
+  {
+    id: 'arp-poisoning',
+    name: 'ARP Poisoning',
+    icon: 'fa-network-wired',
+    category: 'Spoofing & Poisoning',
+    severity: 'High',
+    description: 'Attackers send fake Address Resolution Protocol (ARP) messages onto a local area network to link their MAC address with the IP of a legitimate gateway.',
+    harmful_effects: 'Allows attackers to intercept, sniff, inspect, or modify local network communications in transit, leading to local Man-in-the-Middle (MITM) exposures.',
+    prevention: 'Enable Dynamic ARP Inspection (DAI) on corporate ethernet switches, map static ARP tables for core servers, and mandate end-to-end VPN or TLS encryption.'
+  },
+  {
+    id: 'dns-spoofing',
+    name: 'DNS Spoofing',
+    icon: 'fa-server',
+    category: 'Spoofing & Poisoning',
+    severity: 'Medium',
+    description: 'Forged Domain Name System (DNS) entry maps are injected into a resolver\'s cache, directing hostname requests to malicious attacker-controlled server IPs.',
+    harmful_effects: 'User requests for clean sites (e.g. online banking) are silently redirected to identical phishing clones, leading to widespread credentials theft.',
+    prevention: 'Deploy DNSSEC (DNS Security Extensions) to validate record authenticity, secure DNS cache ports, and use encrypted DNS over HTTPS (DoH) services.'
+  },
+  {
+    id: 'mitm-redirect',
+    name: 'MITM Redirect',
+    icon: 'fa-arrows-split-up-and-left',
+    category: 'Man-in-the-Middle',
+    severity: 'Critical',
+    description: 'Attackers hijack network packets to act as an invisible relay proxy between client requests and server responses without either side realizing.',
+    harmful_effects: 'Exposes private API payloads, encryption keys, and login credentials, and permits malicious actors to alter communication flows in real-time.',
+    prevention: 'Enforce strict end-to-end HTTPS with HSTS headers, pin SSL/TLS public certificates, and verify link path integrity.'
+  },
+  {
+    id: 'c2-callout',
+    name: 'Botnet C2 Callout',
+    icon: 'fa-terminal',
+    category: 'Malware Operations',
+    severity: 'Critical',
+    description: 'An infected internal computer automatically opens a outbound connection (beacon) to an external Command and Control (C2) botnet server.',
+    harmful_effects: 'The compromised system joins a coordinated botnet fleet to execute DDoS attacks, mine crypto, spread malware, or exfiltrate local files.',
+    prevention: 'Disable all non-standard outgoing port traffic, deploy DNS sinkholes to block C2 domain lookups, and use endpoint detection response (EDR).'
+  },
+  {
+    id: 'smurf',
+    name: 'Smurf Attack',
+    icon: 'fa-bullhorn',
+    category: 'Denial of Service',
+    severity: 'High',
+    description: 'An attacker broadcasts ICMP packets with a spoofed source IP address (set to the target\'s IP) to a local broadcast network, prompting all hosts to reply.',
+    harmful_effects: 'Generates a volumetric reply traffic multiplier that quickly congests the target\'s network card interfaces, causing total denial of service.',
+    prevention: 'Configure routers to reject packets directed to network broadcast IP addresses, and restrict ICMP responder rates.'
+  },
+  {
+    id: 'overflow',
+    name: 'Buffer Overflow',
+    icon: 'fa-box-open',
+    category: 'Service Exploit',
+    severity: 'Critical',
+    description: 'Massive dataset packets are directed to unmanaged system buffer inputs, exceeding storage boundaries and writing directly into memory execution registers.',
+    harmful_effects: 'Crashes critical system services (like SMB or Telnet) and enables arbitrary remote code execution (RCE) with full root/system privileges.',
+    prevention: 'Perform compiler bounds checking, keep operating system server patches updated, and enforce Memory protection features like DEP, ASLR, and Canary bounds.'
+  },
+  {
+    id: 'dos',
+    name: 'DoS (Denial of Service)',
+    icon: 'fa-triangle-exclamation',
+    category: 'Denial of Service',
+    severity: 'Critical',
+    description: 'A resource exhaustion exploit targeting CPU, RAM, or bandwidth limits by sending volumetric packet clusters to clog server capacities.',
+    harmful_effects: 'Stops legitimate operator access to systems and services, locking out business applications and causing severe operational disruption.',
+    prevention: 'Enforce hardware rate limits, set up network load balancers, dynamically scale backend server nodes, and block bad IPs at edge routing tables.'
+  }
+];
+
+function AttackKnowledgeView() {
+  const [selectedAttack, setSelectedAttack] = useState(ATTACK_DATABASE[0]);
+
+  return (
+    <div className="row g-4">
+      {/* Sidebar List */}
+      <div className="col-md-4 col-lg-3">
+        <div className="card-cyber p-3" style={{ maxHeight: '600px', overflowY: 'auto' }}>
+          <h6 className="border-bottom pb-2 mb-3 fw-bold text-muted">
+            <i className="fa-solid fa-list me-2"></i>Attack Threats List
+          </h6>
+          <div className="list-group list-group-flush gap-1">
+            {ATTACK_DATABASE.map(attack => (
+              <button
+                key={attack.id}
+                type="button"
+                className={`list-group-item list-group-item-action border-0 rounded text-start d-flex align-items-center py-2 px-3 fw-semibold ${selectedAttack.id === attack.id ? 'active' : ''}`}
+                style={{
+                  backgroundColor: selectedAttack.id === attack.id ? 'rgba(2, 132, 199, 0.08)' : 'transparent',
+                  color: selectedAttack.id === attack.id ? 'var(--primary)' : 'var(--text-muted)',
+                  fontSize: '13px'
+                }}
+                onClick={() => setSelectedAttack(attack)}
+              >
+                <i className={`fa-solid ${attack.icon} me-3 text-center`} style={{ width: '18px' }}></i>
+                {attack.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Details Card */}
+      <div className="col-md-8 col-lg-9">
+        <div className="card-cyber p-4 h-100 d-flex flex-column justify-content-between">
+          <div>
+            <div className="d-flex justify-content-between align-items-start border-bottom pb-3 mb-4 flex-wrap gap-2">
+              <div className="d-flex align-items-center gap-3">
+                <div className="bg-primary-subtle text-primary rounded p-3 d-flex align-items-center justify-content-center" style={{ width: '56px', height: '56px', fontSize: '24px' }}>
+                  <i className={`fa-solid ${selectedAttack.icon}`}></i>
+                </div>
+                <div>
+                  <h4 className="fw-bold text-dark mb-1">{selectedAttack.name}</h4>
+                  <span className="text-muted small fw-bold text-uppercase me-3"><i className="fa-solid fa-folder me-1"></i>{selectedAttack.category}</span>
+                </div>
+              </div>
+              <span className={`badge-sev ${selectedAttack.severity === 'Critical' ? 'badge-critical' : selectedAttack.severity === 'High' ? 'badge-high' : selectedAttack.severity === 'Medium' ? 'badge-medium' : 'badge-low'}`}>
+                {selectedAttack.severity} Priority
+              </span>
+            </div>
+
+            {/* Description */}
+            <div className="mb-4">
+              <h6 className="fw-bold text-dark mb-2"><i className="fa-solid fa-circle-info text-primary me-2"></i>Description & Vector Overview</h6>
+              <p className="text-muted" style={{ fontSize: '14px', lineHeight: '1.6' }}>{selectedAttack.description}</p>
+            </div>
+
+            {/* Harmful Effects */}
+            <div className="mb-4 p-3 rounded" style={{ backgroundColor: 'rgba(220, 38, 38, 0.03)', border: '1px dashed rgba(220, 38, 38, 0.15)' }}>
+              <h6 className="fw-bold text-danger mb-2"><i className="fa-solid fa-triangle-exclamation me-2"></i>Harmful System Effects</h6>
+              <p className="text-muted mb-0" style={{ fontSize: '14px', lineHeight: '1.6' }}>{selectedAttack.harmful_effects}</p>
+            </div>
+
+            {/* Prevention */}
+            <div className="mb-4 p-3 rounded" style={{ backgroundColor: 'rgba(16, 185, 129, 0.03)', border: '1px dashed rgba(16, 185, 129, 0.15)' }}>
+              <h6 className="fw-bold text-success mb-2"><i className="fa-solid fa-shield-halved me-2"></i>Prevention & Mitigation Actions</h6>
+              <p className="text-muted mb-0" style={{ fontSize: '14px', lineHeight: '1.6' }}>{selectedAttack.prevention}</p>
+            </div>
+          </div>
+
+          <div className="mt-4 p-3 bg-light rounded text-muted small border d-flex align-items-center">
+            <i className="fa-solid fa-graduation-cap me-3 text-primary fa-lg"></i>
+            <span>This Security Knowledge Base helps analysts configure firewall rules and patch systems to mitigate detected anomalies.</span>
+          </div>
         </div>
       </div>
     </div>
