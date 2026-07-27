@@ -295,9 +295,10 @@ code {
 .navbar-nav .nav-link {
     color: var(--text-muted);
     font-weight: 500;
+    font-size: 13.5px !important;
     transition: var(--transition);
     border-radius: 6px;
-    padding: 8px 12px !important;
+    padding: 6px 10px !important;
     white-space: nowrap !important;
 }
 #sidebar-status-text, #sidebar-mode-text {
@@ -311,4 +312,9 @@ code {
     background-color: rgba(2, 132, 199, 0.08);
     color: var(--primary) !important;
     font-weight: 600;
+}
+
+/* Ensure control buttons are never squeezed or pushed off screen */
+.navbar-collapse > .d-flex {
+    flex-shrink: 0 !important;
 }
