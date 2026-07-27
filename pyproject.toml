@@ -1,7 +1,0 @@
-[project]
-name = "ai-nids-system"
-version = "0.1.0"
-dependencies = []
-
-[tool.vercel]
-entrypoint = "run:app"

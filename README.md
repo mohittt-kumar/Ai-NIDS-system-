@@ -1,34 +1,16 @@
-# AI-Integrated Web-Based Network Intrusion Detection System (AI-NIDS)
+# React + Vite
 
-A full-stack SOC dashboard that integrates real-time packet capturing (via Scapy or custom fallback simulator), heuristic rules, and a Random Forest Classifier trained on CICIDS2017 features.
+This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
-## Setup & Installation
+Currently, two official plugins are available:
 
-### 1. Install dependencies
-```bash
-pip install -r requirements.txt
-```
-*Note: Raw socket sniffing via Scapy on Windows requires Npcap. If not installed, the application falls back to simulation mode.*
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-### 2. Train the Random Forest Model
-This script generates simulated network traffic dataset (15,000 samples) and trains the classifier:
-```bash
-python train_model.py
-```
+## React Compiler
 
-### 3. Run unit tests
-```bash
-python test_app.py
-```
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-### 4. Run the web server
-```bash
-python run.py
-```
-Open your browser and navigate to: http://127.0.0.1:5000
+## Expanding the Oxlint configuration
 
-## Default Credentials
-The database is auto-provisioned with the following login details:
-
-- **Admin Account**: `admin` / `password123`
-- **Analyst Account**: `analyst` / `password123`
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
