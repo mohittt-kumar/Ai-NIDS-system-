@@ -188,33 +188,34 @@ export const predictPacket = (features) => {
     let attack_type = 'Normal';
     let confidence = 0.99;
 
+    // Use deterministic calculations based on srcPort instead of Math.random()
     if (proto === 'ICMP' && packetsRate > 10) {
         attack_type = 'Ping Flood';
-        confidence = 0.94 + Math.random() * 0.05;
+        confidence = 0.94 + (srcPort % 5) * 0.01;
     } else if (proto === 'TCP' && (dstPort === 22 || dstPort === 21 || dstPort === 3389) && packetsRate > 8) {
         attack_type = 'Brute Force';
-        confidence = 0.96 + Math.random() * 0.03;
+        confidence = 0.96 + (srcPort % 3) * 0.01;
     } else if (packetsRate > 100) {
         attack_type = 'DoS';
-        confidence = 0.98 + Math.random() * 0.01;
+        confidence = 0.98 + (srcPort % 2) * 0.01;
     } else if (duration > 5000 && fwdPackets > 30 && flowBytes > 50000) {
         attack_type = 'DDoS';
-        confidence = 0.97 + Math.random() * 0.02;
+        confidence = 0.97 + (srcPort % 3) * 0.01;
     } else if (dstPort > 1024 && packetsRate > 40 && fwdPackets > 15) {
         attack_type = 'Port Scan';
-        confidence = 0.95 + Math.random() * 0.04;
+        confidence = 0.95 + (srcPort % 4) * 0.01;
     } else if (dstPort === 80 || dstPort === 443) {
         const fwdLen = parseInt(features.Total_Length_of_Fwd_Packets !== undefined ? features.Total_Length_of_Fwd_Packets : features.size || 0);
-        if (fwdLen > 1000 && Math.random() > 0.7) {
+        if (fwdLen > 1100) {
             attack_type = 'Web Attack';
-            confidence = 0.92 + Math.random() * 0.06;
+            confidence = 0.92 + (srcPort % 6) * 0.01;
         }
     }
 
     // Preserve preset attack signatures from packet simulator
     if (features._attack_type && features._attack_type !== 'Normal') {
         attack_type = features._attack_type;
-        confidence = 0.95 + Math.random() * 0.04;
+        confidence = 0.95 + (srcPort % 4) * 0.01;
     }
 
     return {
